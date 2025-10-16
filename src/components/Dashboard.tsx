@@ -32,6 +32,50 @@ interface DashboardProps {
 export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
   const [timePeriod, setTimePeriod] = useState<"day" | "week" | "month">("day");
 
+  // Mock data for charts
+  const incidentsByHour = [
+    { hour: "00:00", count: 2 },
+    { hour: "04:00", count: 1 },
+    { hour: "08:00", count: 3 },
+    { hour: "12:00", count: 4 },
+    { hour: "16:00", count: 2 },
+    { hour: "20:00", count: 1 },
+  ];
+
+  const incidentsByDay = [
+    { day: "Пн", count: 12 },
+    { day: "Вт", count: 15 },
+    { day: "Ср", count: 10 },
+    { day: "Чт", count: 18 },
+    { day: "Пт", count: 14 },
+    { day: "Сб", count: 8 },
+    { day: "Вс", count: 6 },
+  ];
+
+  const incidentsByCategory = [
+    { name: "Ненормативная лексика", value: 45, color: "#ef4444" },
+    { name: "Призыв о помощи", value: 30, color: "#8b5cf6" },
+    { name: "Другое", value: 25, color: "#6366f1" },
+  ];
+
+  const summaryStats = {
+    today: {
+      count: 7,
+      change: 12,
+      isPositive: false,
+    },
+    week: {
+      count: 83,
+      change: 5,
+      isPositive: false,
+    },
+    month: {
+      count: 312,
+      change: 8,
+      isPositive: false,
+    },
+  };
+
   // Mock data
   const recentIncidents = [
     {
