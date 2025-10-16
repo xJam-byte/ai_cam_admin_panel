@@ -333,7 +333,7 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
       <Card className="bg-gradient-to-br from-slate-50 to-white border border-slate-200">
         <CardHeader>
           <CardTitle className="text-lg">Инциденты по категориям</CardTitle>
-          <CardDescription>분류된 사건 데이터 в этом месяце</CardDescription>
+          <CardDescription>Распределение инцидентов в этом месяце</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col lg:flex-row items-center justify-center gap-8">
