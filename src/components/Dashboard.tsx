@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertTriangle, Camera, ChevronRight, Sparkles } from "lucide-react";
+import { AlertTriangle, Camera, ChevronRight, Sparkles, TrendingUp, TrendingDown } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -9,6 +9,21 @@ import {
 } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 
 interface DashboardProps {
   onNavigateToIncidents: () => void;
@@ -16,6 +31,93 @@ interface DashboardProps {
 
 export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
   const [timePeriod, setTimePeriod] = useState<"day" | "week" | "month">("day");
+
+  // Mock data for charts based on time period
+  const chartDataByPeriod = {
+    day: {
+      hourly: [
+        { hour: "00:00", count: 2 },
+        { hour: "04:00", count: 1 },
+        { hour: "08:00", count: 3 },
+        { hour: "12:00", count: 4 },
+        { hour: "16:00", count: 2 },
+        { hour: "20:00", count: 1 },
+      ],
+      daily: [
+        { day: "Сегодня", count: 7 },
+      ],
+    },
+    week: {
+      hourly: [
+        { hour: "Пн", count: 12 },
+        { hour: "Вт", count: 15 },
+        { hour: "Ср", count: 10 },
+        { hour: "Чт", count: 18 },
+        { hour: "Пт", count: 14 },
+        { hour: "Сб", count: 8 },
+        { hour: "Вс", count: 6 },
+      ],
+      daily: [
+        { day: "Пн", count: 12 },
+        { day: "Вт", count: 15 },
+        { day: "Ср", count: 10 },
+        { day: "Чт", count: 18 },
+        { day: "Пт", count: 14 },
+        { day: "��б", count: 8 },
+        { day: "Вс", count: 6 },
+      ],
+    },
+    month: {
+      hourly: [
+        { hour: "1 неделя", count: 83 },
+        { hour: "2 неделя", count: 92 },
+        { hour: "3 неделя", count: 78 },
+        { hour: "4 неделя", count: 87 },
+      ],
+      daily: [
+        { day: "Пн", count: 48 },
+        { day: "Вт", count: 52 },
+        { day: "Ср", count: 44 },
+        { day: "Чт", count: 61 },
+        { day: "Пт", count: 58 },
+        { day: "Сб", count: 29 },
+        { day: "Вс", count: 20 },
+      ],
+    },
+  };
+
+  const incidentsByCategory = [
+    { name: "Ненормативная лексика", value: 45, color: "#ef4444" },
+    { name: "Призыв о помощи", value: 30, color: "#8b5cf6" },
+    { name: "Другое", value: 25, color: "#6366f1" },
+  ];
+
+  const summaryStatsByPeriod = {
+    day: {
+      count: 7,
+      change: 12,
+      isPositive: false,
+      label: "Сегодня",
+      compareText: "от вчера",
+    },
+    week: {
+      count: 83,
+      change: 5,
+      isPositive: false,
+      label: "На этой неделе",
+      compareText: "от прошлой недели",
+    },
+    month: {
+      count: 312,
+      change: 8,
+      isPositive: false,
+      label: "В этом месяце",
+      compareText: "от прошлого месяца",
+    },
+  };
+
+  const currentStats = summaryStatsByPeriod[timePeriod];
+  const currentChartData = chartDataByPeriod[timePeriod];
 
   // Mock data
   const recentIncidents = [
@@ -108,37 +210,279 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
         </div>
       </div>
 
-      {/* Key Widget - Incidents Today */}
-      <Card
-        className="cursor-pointer hover:shadow-xl transition-all border-2 border-slate-200 bg-gradient-to-br from-white to-slate-50"
-        onClick={onNavigateToIncidents}
-      >
-        <CardContent className="pt-8 pb-8">
-          <div className="text-center space-y-4">
-            <div className="flex items-center justify-center gap-3 mb-6">
-              <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
-                <AlertTriangle className="h-6 w-6 text-amber-600" />
+      {/* Summary Statistics Card - Dynamic based on time period */}
+      <Card className="bg-gradient-to-br from-slate-50 to-white border border-slate-200">
+        <CardContent className="pt-6">
+          <div className="space-y-3">
+            <p className="text-slate-600 text-sm font-medium">{currentStats.label}</p>
+            <div className="flex items-center justify-between">
+              <div className="text-4xl font-bold text-slate-900">
+                {currentStats.count}
+              </div>
+              <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                timePeriod === 'day' ? 'bg-blue-100' :
+                timePeriod === 'week' ? 'bg-purple-100' :
+                'bg-indigo-100'
+              }`}>
+                <AlertTriangle className={`h-6 w-6 ${
+                  timePeriod === 'day' ? 'text-blue-600' :
+                  timePeriod === 'week' ? 'text-purple-600' :
+                  'text-indigo-600'
+                }`} />
               </div>
             </div>
-            <div className="space-y-2">
-              <div
-                className="text-slate-900"
-                style={{ fontSize: "4rem", lineHeight: "1" }}
+            <div className="flex items-center gap-1 text-sm">
+              {currentStats.isPositive ? (
+                <TrendingUp className="h-4 w-4 text-green-600" />
+              ) : (
+                <TrendingDown className="h-4 w-4 text-red-600" />
+              )}
+              <span
+                className={
+                  currentStats.isPositive
+                    ? "text-green-600"
+                    : "text-red-600"
+                }
               >
-                7
-              </div>
-              <p className="text-slate-900">Инциденты за сегодня</p>
-              <div className="flex items-center justify-center gap-2 text-amber-600 mt-4">
-                <AlertTriangle className="h-5 w-5" />
-                <span>3 требуют внимания</span>
-              </div>
+                {currentStats.change}% {currentStats.compareText}
+              </span>
             </div>
-            <Button className="mt-6" size="lg">
-              Перейти к инцидентам
-            </Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* Analytics Charts */}
+      {timePeriod === 'day' ? (
+        // For "День" - show only hourly line chart
+        <Card className="bg-gradient-to-br from-slate-50 to-white border border-slate-200">
+          <CardHeader>
+            <CardTitle className="text-lg">Инциденты по времени</CardTitle>
+            <CardDescription>Распределение событий за сегодня</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={400}>
+              <LineChart data={currentChartData.hourly}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis dataKey="hour" stroke="#64748b" label={{ value: 'Время', position: 'insideBottomRight', offset: -5 }} />
+                <YAxis stroke="#64748b" label={{ value: 'Количество инцидентов', angle: -90, position: 'insideLeft' }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#ffffff",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "0.5rem",
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="count"
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                  dot={{ fill: "#3b82f6", r: 5 }}
+                  activeDot={{ r: 7 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      ) : timePeriod === 'week' ? (
+        // For "Неделя" - show bar chart and donut chart only
+        <>
+          {/* Bar Chart - Incidents by Day */}
+          <Card className="bg-gradient-to-br from-slate-50 to-white border border-slate-200">
+            <CardHeader>
+              <CardTitle className="text-lg">Инциденты по дням недели</CardTitle>
+              <CardDescription>Данные за текущую неделю</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={currentChartData.daily}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="day" stroke="#64748b" />
+                  <YAxis stroke="#64748b" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#ffffff",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "0.5rem",
+                    }}
+                  />
+                  <Bar dataKey="count" fill="#8b5cf6" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Donut Chart - Incidents by Category */}
+          <Card className="bg-gradient-to-br from-slate-50 to-white border border-slate-200">
+            <CardHeader>
+              <CardTitle className="text-lg">Инциденты по категориям</CardTitle>
+              <CardDescription>Распределение инцидентов в этом месяце</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col lg:flex-row items-center justify-center gap-8">
+                <ResponsiveContainer width="100%" height={300} minWidth={250}>
+                  <PieChart>
+                    <Pie
+                      data={incidentsByCategory}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={80}
+                      outerRadius={120}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
+                      {incidentsByCategory.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#ffffff",
+                        border: "1px solid #e2e8f0",
+                        borderRadius: "0.5rem",
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="flex flex-col gap-4">
+                  {incidentsByCategory.map((category) => (
+                    <div key={category.name} className="flex items-center gap-3">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: category.color }}
+                      />
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-slate-900 text-sm font-medium">
+                          {category.name}
+                        </span>
+                        <span className="text-slate-500 text-sm">
+                          {category.value} инцидентов
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      ) : (
+        // For "Месяц" - show line chart, bar chart and donut chart
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Line Chart - Incidents by Week */}
+            <Card className="bg-gradient-to-br from-slate-50 to-white border border-slate-200">
+              <CardHeader>
+                <CardTitle className="text-lg">Инциденты по неделям</CardTitle>
+                <CardDescription>Данные за текущий месяц</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={currentChartData.hourly}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey="hour" stroke="#64748b" />
+                    <YAxis stroke="#64748b" />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#ffffff",
+                        border: "1px solid #e2e8f0",
+                        borderRadius: "0.5rem",
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="count"
+                      stroke="#3b82f6"
+                      strokeWidth={2}
+                      dot={{ fill: "#3b82f6", r: 5 }}
+                      activeDot={{ r: 7 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {/* Bar Chart - Incidents by Day */}
+            <Card className="bg-gradient-to-br from-slate-50 to-white border border-slate-200">
+              <CardHeader>
+                <CardTitle className="text-lg">Ин��иденты по дням недели</CardTitle>
+                <CardDescription>Среднее за текущий месяц</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={currentChartData.daily}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey="day" stroke="#64748b" />
+                    <YAxis stroke="#64748b" />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#ffffff",
+                        border: "1px solid #e2e8f0",
+                        borderRadius: "0.5rem",
+                      }}
+                    />
+                    <Bar dataKey="count" fill="#8b5cf6" radius={[8, 8, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Donut Chart - Incidents by Category */}
+          <Card className="bg-gradient-to-br from-slate-50 to-white border border-slate-200">
+            <CardHeader>
+              <CardTitle className="text-lg">Инциденты по категориям</CardTitle>
+              <CardDescription>Распределение инцидентов в этом месяце</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col lg:flex-row items-center justify-center gap-8">
+                <ResponsiveContainer width="100%" height={300} minWidth={250}>
+                  <PieChart>
+                    <Pie
+                      data={incidentsByCategory}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={80}
+                      outerRadius={120}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
+                      {incidentsByCategory.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#ffffff",
+                        border: "1px solid #e2e8f0",
+                        borderRadius: "0.5rem",
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="flex flex-col gap-4">
+                  {incidentsByCategory.map((category) => (
+                    <div key={category.name} className="flex items-center gap-3">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: category.color }}
+                      />
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-slate-900 text-sm font-medium">
+                          {category.name}
+                        </span>
+                        <span className="text-slate-500 text-sm">
+                          {category.value} инцидентов
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Incidents */}
