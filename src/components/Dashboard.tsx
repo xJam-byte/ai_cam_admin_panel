@@ -63,7 +63,7 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
         { day: "Ср", count: 10 },
         { day: "Чт", count: 18 },
         { day: "Пт", count: 14 },
-        { day: "Сб", count: 8 },
+        { day: "��б", count: 8 },
         { day: "Вс", count: 6 },
       ],
     },
@@ -284,23 +284,97 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
             </ResponsiveContainer>
           </CardContent>
         </Card>
+      ) : timePeriod === 'week' ? (
+        // For "Неделя" - show bar chart and donut chart only
+        <>
+          {/* Bar Chart - Incidents by Day */}
+          <Card className="bg-gradient-to-br from-slate-50 to-white border border-slate-200">
+            <CardHeader>
+              <CardTitle className="text-lg">Инциденты по дням недели</CardTitle>
+              <CardDescription>Данные за текущую неделю</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={currentChartData.daily}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="day" stroke="#64748b" />
+                  <YAxis stroke="#64748b" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#ffffff",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "0.5rem",
+                    }}
+                  />
+                  <Bar dataKey="count" fill="#8b5cf6" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Donut Chart - Incidents by Category */}
+          <Card className="bg-gradient-to-br from-slate-50 to-white border border-slate-200">
+            <CardHeader>
+              <CardTitle className="text-lg">Инциденты по категориям</CardTitle>
+              <CardDescription>Распределение инцидентов в этом месяце</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col lg:flex-row items-center justify-center gap-8">
+                <ResponsiveContainer width="100%" height={300} minWidth={250}>
+                  <PieChart>
+                    <Pie
+                      data={incidentsByCategory}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={80}
+                      outerRadius={120}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
+                      {incidentsByCategory.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#ffffff",
+                        border: "1px solid #e2e8f0",
+                        borderRadius: "0.5rem",
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="flex flex-col gap-4">
+                  {incidentsByCategory.map((category) => (
+                    <div key={category.name} className="flex items-center gap-3">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: category.color }}
+                      />
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-slate-900 text-sm font-medium">
+                          {category.name}
+                        </span>
+                        <span className="text-slate-500 text-sm">
+                          {category.value} инцидентов
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </>
       ) : (
-        // For "Неделя" and "Месяц" - show all charts
+        // For "Месяц" - show line chart, bar chart and donut chart
         <>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Line Chart - Incidents Distribution */}
+            {/* Line Chart - Incidents by Week */}
             <Card className="bg-gradient-to-br from-slate-50 to-white border border-slate-200">
               <CardHeader>
-                <CardTitle className="text-lg">
-                  {timePeriod === 'week'
-                    ? 'Инциденты по дням недели'
-                    : 'Инциденты по неделям'}
-                </CardTitle>
-                <CardDescription>
-                  {timePeriod === 'week'
-                    ? 'Данные за текущую неделю'
-                    : 'Данные за текущий месяц'}
-                </CardDescription>
+                <CardTitle className="text-lg">Инциденты по неделям</CardTitle>
+                <CardDescription>Данные за текущий месяц</CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -331,12 +405,8 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
             {/* Bar Chart - Incidents by Day */}
             <Card className="bg-gradient-to-br from-slate-50 to-white border border-slate-200">
               <CardHeader>
-                <CardTitle className="text-lg">Инциденты по дням недели</CardTitle>
-                <CardDescription>
-                  {timePeriod === 'week'
-                    ? 'Данные за текущую неделю'
-                    : 'Среднее за текущий месяц'}
-                </CardDescription>
+                <CardTitle className="text-lg">Ин��иденты по дням недели</CardTitle>
+                <CardDescription>Среднее за текущий месяц</CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -402,7 +472,7 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
                           {category.name}
                         </span>
                         <span className="text-slate-500 text-sm">
-                          {category.value} инциден��ов
+                          {category.value} инцидентов
                         </span>
                       </div>
                     </div>
