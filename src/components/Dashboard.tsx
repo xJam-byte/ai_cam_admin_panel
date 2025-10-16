@@ -32,25 +32,59 @@ interface DashboardProps {
 export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
   const [timePeriod, setTimePeriod] = useState<"day" | "week" | "month">("day");
 
-  // Mock data for charts
-  const incidentsByHour = [
-    { hour: "00:00", count: 2 },
-    { hour: "04:00", count: 1 },
-    { hour: "08:00", count: 3 },
-    { hour: "12:00", count: 4 },
-    { hour: "16:00", count: 2 },
-    { hour: "20:00", count: 1 },
-  ];
-
-  const incidentsByDay = [
-    { day: "Пн", count: 12 },
-    { day: "Вт", count: 15 },
-    { day: "Ср", count: 10 },
-    { day: "Чт", count: 18 },
-    { day: "Пт", count: 14 },
-    { day: "Сб", count: 8 },
-    { day: "Вс", count: 6 },
-  ];
+  // Mock data for charts based on time period
+  const chartDataByPeriod = {
+    day: {
+      hourly: [
+        { hour: "00:00", count: 2 },
+        { hour: "04:00", count: 1 },
+        { hour: "08:00", count: 3 },
+        { hour: "12:00", count: 4 },
+        { hour: "16:00", count: 2 },
+        { hour: "20:00", count: 1 },
+      ],
+      daily: [
+        { day: "Сегодня", count: 7 },
+      ],
+    },
+    week: {
+      hourly: [
+        { hour: "Пн", count: 12 },
+        { hour: "Вт", count: 15 },
+        { hour: "Ср", count: 10 },
+        { hour: "Чт", count: 18 },
+        { hour: "Пт", count: 14 },
+        { hour: "Сб", count: 8 },
+        { hour: "Вс", count: 6 },
+      ],
+      daily: [
+        { day: "Пн", count: 12 },
+        { day: "Вт", count: 15 },
+        { day: "Ср", count: 10 },
+        { day: "Чт", count: 18 },
+        { day: "Пт", count: 14 },
+        { day: "Сб", count: 8 },
+        { day: "Вс", count: 6 },
+      ],
+    },
+    month: {
+      hourly: [
+        { hour: "1 неделя", count: 83 },
+        { hour: "2 неделя", count: 92 },
+        { hour: "3 неделя", count: 78 },
+        { hour: "4 неделя", count: 87 },
+      ],
+      daily: [
+        { day: "Пн", count: 48 },
+        { day: "Вт", count: 52 },
+        { day: "Ср", count: 44 },
+        { day: "Чт", count: 61 },
+        { day: "Пт", count: 58 },
+        { day: "Сб", count: 29 },
+        { day: "Вс", count: 20 },
+      ],
+    },
+  };
 
   const incidentsByCategory = [
     { name: "Ненормативная лексика", value: 45, color: "#ef4444" },
@@ -58,23 +92,32 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
     { name: "Другое", value: 25, color: "#6366f1" },
   ];
 
-  const summaryStats = {
-    today: {
+  const summaryStatsByPeriod = {
+    day: {
       count: 7,
       change: 12,
       isPositive: false,
+      label: "Сегодня",
+      compareText: "от вчера",
     },
     week: {
       count: 83,
       change: 5,
       isPositive: false,
+      label: "На этой неделе",
+      compareText: "от прошлой недели",
     },
     month: {
       count: 312,
       change: 8,
       isPositive: false,
+      label: "В этом месяце",
+      compareText: "от прошлого месяца",
     },
   };
+
+  const currentStats = summaryStatsByPeriod[timePeriod];
+  const currentChartData = chartDataByPeriod[timePeriod];
 
   // Mock data
   const recentIncidents = [
