@@ -167,34 +167,218 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
         </div>
       </div>
 
-      {/* Key Widget - Incidents Today */}
-      <Card
-        className="cursor-pointer hover:shadow-xl transition-all border-2 border-slate-200 bg-gradient-to-br from-white to-slate-50"
-        onClick={onNavigateToIncidents}
-      >
-        <CardContent className="pt-8 pb-8">
-          <div className="text-center space-y-4">
-            <div className="flex items-center justify-center gap-3 mb-6">
-              <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
-                <AlertTriangle className="h-6 w-6 text-amber-600" />
+      {/* Summary Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Today Card */}
+        <Card className="bg-gradient-to-br from-slate-50 to-white border border-slate-200">
+          <CardContent className="pt-6">
+            <div className="space-y-3">
+              <p className="text-slate-600 text-sm font-medium">Сегодня</p>
+              <div className="flex items-center justify-between">
+                <div className="text-4xl font-bold text-slate-900">
+                  {summaryStats.today.count}
+                </div>
+                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <AlertTriangle className="h-6 w-6 text-blue-600" />
+                </div>
+              </div>
+              <div className="flex items-center gap-1 text-sm">
+                {summaryStats.today.isPositive ? (
+                  <TrendingUp className="h-4 w-4 text-green-600" />
+                ) : (
+                  <TrendingDown className="h-4 w-4 text-red-600" />
+                )}
+                <span
+                  className={
+                    summaryStats.today.isPositive
+                      ? "text-green-600"
+                      : "text-red-600"
+                  }
+                >
+                  {summaryStats.today.change}% от вчера
+                </span>
               </div>
             </div>
-            <div className="space-y-2">
-              <div
-                className="text-slate-900"
-                style={{ fontSize: "4rem", lineHeight: "1" }}
-              >
-                7
+          </CardContent>
+        </Card>
+
+        {/* This Week Card */}
+        <Card className="bg-gradient-to-br from-slate-50 to-white border border-slate-200">
+          <CardContent className="pt-6">
+            <div className="space-y-3">
+              <p className="text-slate-600 text-sm font-medium">На этой неделе</p>
+              <div className="flex items-center justify-between">
+                <div className="text-4xl font-bold text-slate-900">
+                  {summaryStats.week.count}
+                </div>
+                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <AlertTriangle className="h-6 w-6 text-purple-600" />
+                </div>
               </div>
-              <p className="text-slate-900">Инциденты за сегодня</p>
-              <div className="flex items-center justify-center gap-2 text-amber-600 mt-4">
-                <AlertTriangle className="h-5 w-5" />
-                <span>3 требуют внимания</span>
+              <div className="flex items-center gap-1 text-sm">
+                {summaryStats.week.isPositive ? (
+                  <TrendingUp className="h-4 w-4 text-green-600" />
+                ) : (
+                  <TrendingDown className="h-4 w-4 text-red-600" />
+                )}
+                <span
+                  className={
+                    summaryStats.week.isPositive
+                      ? "text-green-600"
+                      : "text-red-600"
+                  }
+                >
+                  {summaryStats.week.change}% от прошлой недели
+                </span>
               </div>
             </div>
-            <Button className="mt-6" size="lg">
-              Перейти к инцидентам
-            </Button>
+          </CardContent>
+        </Card>
+
+        {/* This Month Card */}
+        <Card className="bg-gradient-to-br from-slate-50 to-white border border-slate-200">
+          <CardContent className="pt-6">
+            <div className="space-y-3">
+              <p className="text-slate-600 text-sm font-medium">В этом месяце</p>
+              <div className="flex items-center justify-between">
+                <div className="text-4xl font-bold text-slate-900">
+                  {summaryStats.month.count}
+                </div>
+                <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
+                  <AlertTriangle className="h-6 w-6 text-indigo-600" />
+                </div>
+              </div>
+              <div className="flex items-center gap-1 text-sm">
+                {summaryStats.month.isPositive ? (
+                  <TrendingUp className="h-4 w-4 text-green-600" />
+                ) : (
+                  <TrendingDown className="h-4 w-4 text-red-600" />
+                )}
+                <span
+                  className={
+                    summaryStats.month.isPositive
+                      ? "text-green-600"
+                      : "text-red-600"
+                  }
+                >
+                  {summaryStats.month.change}% от прошлого месяца
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Analytics Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Line Chart - Incidents by Hour */}
+        <Card className="bg-gradient-to-br from-slate-50 to-white border border-slate-200">
+          <CardHeader>
+            <CardTitle className="text-lg">Инциденты по часам</CardTitle>
+            <CardDescription>Распределение событий за сегодня</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={incidentsByHour}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis dataKey="hour" stroke="#64748b" />
+                <YAxis stroke="#64748b" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#ffffff",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "0.5rem",
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="count"
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                  dot={{ fill: "#3b82f6", r: 5 }}
+                  activeDot={{ r: 7 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Bar Chart - Incidents by Day */}
+        <Card className="bg-gradient-to-br from-slate-50 to-white border border-slate-200">
+          <CardHeader>
+            <CardTitle className="text-lg">Инциденты по дням недели</CardTitle>
+            <CardDescription>Данные за текущую неделю</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={incidentsByDay}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis dataKey="day" stroke="#64748b" />
+                <YAxis stroke="#64748b" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#ffffff",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "0.5rem",
+                  }}
+                />
+                <Bar dataKey="count" fill="#8b5cf6" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Donut Chart - Incidents by Category */}
+      <Card className="bg-gradient-to-br from-slate-50 to-white border border-slate-200">
+        <CardHeader>
+          <CardTitle className="text-lg">Инциденты по категориям</CardTitle>
+          <CardDescription>분류된 사건 데이터 в этом месяце</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col lg:flex-row items-center justify-center gap-8">
+            <ResponsiveContainer width="100%" height={300} minWidth={250}>
+              <PieChart>
+                <Pie
+                  data={incidentsByCategory}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={80}
+                  outerRadius={120}
+                  paddingAngle={2}
+                  dataKey="value"
+                >
+                  {incidentsByCategory.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#ffffff",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "0.5rem",
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="flex flex-col gap-4">
+              {incidentsByCategory.map((category) => (
+                <div key={category.name} className="flex items-center gap-3">
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: category.color }}
+                  />
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-slate-900 text-sm font-medium">
+                      {category.name}
+                    </span>
+                    <span className="text-slate-500 text-sm">
+                      {category.value} инцидентов
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </CardContent>
       </Card>
