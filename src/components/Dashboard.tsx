@@ -70,7 +70,7 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
     month: {
       hourly: [
         { hour: "1 неделя", count: 83 },
-        { hour: "2 не��еля", count: 92 },
+        { hour: "2 неделя", count: 92 },
         { hour: "3 неделя", count: 78 },
         { hour: "4 неделя", count: 87 },
       ],
@@ -123,7 +123,7 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
   const recentIncidents = [
     {
       id: "1",
-      description: "Распознана ненорматив��ая лексика (аудио)",
+      description: "Распознана ненормативная лексика (аудио)",
       time: "13:45",
       isAI: true,
       status: "new",
@@ -251,9 +251,42 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
         </CardContent>
       </Card>
 
-      {timePeriod !== 'day' && (
+      {/* Analytics Charts */}
+      {timePeriod === 'day' ? (
+        // For "День" - show only hourly line chart
+        <Card className="bg-gradient-to-br from-slate-50 to-white border border-slate-200">
+          <CardHeader>
+            <CardTitle className="text-lg">Инциденты по времени</CardTitle>
+            <CardDescription>Распределение событий за сегодня</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={400}>
+              <LineChart data={currentChartData.hourly}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis dataKey="hour" stroke="#64748b" label={{ value: 'Время', position: 'insideBottomRight', offset: -5 }} />
+                <YAxis stroke="#64748b" label={{ value: 'Количество инцидентов', angle: -90, position: 'insideLeft' }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#ffffff",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "0.5rem",
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="count"
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                  dot={{ fill: "#3b82f6", r: 5 }}
+                  activeDot={{ r: 7 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      ) : (
+        // For "Неделя" and "Месяц" - show all charts
         <>
-          {/* Analytics Charts - Only shown for week and month */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Line Chart - Incidents Distribution */}
             <Card className="bg-gradient-to-br from-slate-50 to-white border border-slate-200">
@@ -369,7 +402,7 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
                           {category.name}
                         </span>
                         <span className="text-slate-500 text-sm">
-                          {category.value} инцидентов
+                          {category.value} инциден��ов
                         </span>
                       </div>
                     </div>
