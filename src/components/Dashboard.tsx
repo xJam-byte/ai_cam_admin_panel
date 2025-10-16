@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertTriangle, Camera, ChevronRight, Sparkles } from "lucide-react";
+import { AlertTriangle, Camera, ChevronRight, Sparkles, TrendingUp, TrendingDown } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -9,6 +9,21 @@ import {
 } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 
 interface DashboardProps {
   onNavigateToIncidents: () => void;
