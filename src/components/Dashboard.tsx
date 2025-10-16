@@ -210,107 +210,46 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
         </div>
       </div>
 
-      {/* Summary Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Today Card */}
-        <Card className="bg-gradient-to-br from-slate-50 to-white border border-slate-200">
-          <CardContent className="pt-6">
-            <div className="space-y-3">
-              <p className="text-slate-600 text-sm font-medium">Сегодня</p>
-              <div className="flex items-center justify-between">
-                <div className="text-4xl font-bold text-slate-900">
-                  {summaryStats.today.count}
-                </div>
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <AlertTriangle className="h-6 w-6 text-blue-600" />
-                </div>
+      {/* Summary Statistics Card - Dynamic based on time period */}
+      <Card className="bg-gradient-to-br from-slate-50 to-white border border-slate-200">
+        <CardContent className="pt-6">
+          <div className="space-y-3">
+            <p className="text-slate-600 text-sm font-medium">{currentStats.label}</p>
+            <div className="flex items-center justify-between">
+              <div className="text-4xl font-bold text-slate-900">
+                {currentStats.count}
               </div>
-              <div className="flex items-center gap-1 text-sm">
-                {summaryStats.today.isPositive ? (
-                  <TrendingUp className="h-4 w-4 text-green-600" />
-                ) : (
-                  <TrendingDown className="h-4 w-4 text-red-600" />
-                )}
-                <span
-                  className={
-                    summaryStats.today.isPositive
-                      ? "text-green-600"
-                      : "text-red-600"
-                  }
-                >
-                  {summaryStats.today.change}% от вчера
-                </span>
+              <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                timePeriod === 'day' ? 'bg-blue-100' :
+                timePeriod === 'week' ? 'bg-purple-100' :
+                'bg-indigo-100'
+              }`}>
+                <AlertTriangle className={`h-6 w-6 ${
+                  timePeriod === 'day' ? 'text-blue-600' :
+                  timePeriod === 'week' ? 'text-purple-600' :
+                  'text-indigo-600'
+                }`} />
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* This Week Card */}
-        <Card className="bg-gradient-to-br from-slate-50 to-white border border-slate-200">
-          <CardContent className="pt-6">
-            <div className="space-y-3">
-              <p className="text-slate-600 text-sm font-medium">На этой неделе</p>
-              <div className="flex items-center justify-between">
-                <div className="text-4xl font-bold text-slate-900">
-                  {summaryStats.week.count}
-                </div>
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                  <AlertTriangle className="h-6 w-6 text-purple-600" />
-                </div>
-              </div>
-              <div className="flex items-center gap-1 text-sm">
-                {summaryStats.week.isPositive ? (
-                  <TrendingUp className="h-4 w-4 text-green-600" />
-                ) : (
-                  <TrendingDown className="h-4 w-4 text-red-600" />
-                )}
-                <span
-                  className={
-                    summaryStats.week.isPositive
-                      ? "text-green-600"
-                      : "text-red-600"
-                  }
-                >
-                  {summaryStats.week.change}% от прошлой недели
-                </span>
-              </div>
+            <div className="flex items-center gap-1 text-sm">
+              {currentStats.isPositive ? (
+                <TrendingUp className="h-4 w-4 text-green-600" />
+              ) : (
+                <TrendingDown className="h-4 w-4 text-red-600" />
+              )}
+              <span
+                className={
+                  currentStats.isPositive
+                    ? "text-green-600"
+                    : "text-red-600"
+                }
+              >
+                {currentStats.change}% {currentStats.compareText}
+              </span>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* This Month Card */}
-        <Card className="bg-gradient-to-br from-slate-50 to-white border border-slate-200">
-          <CardContent className="pt-6">
-            <div className="space-y-3">
-              <p className="text-slate-600 text-sm font-medium">В этом месяце</p>
-              <div className="flex items-center justify-between">
-                <div className="text-4xl font-bold text-slate-900">
-                  {summaryStats.month.count}
-                </div>
-                <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
-                  <AlertTriangle className="h-6 w-6 text-indigo-600" />
-                </div>
-              </div>
-              <div className="flex items-center gap-1 text-sm">
-                {summaryStats.month.isPositive ? (
-                  <TrendingUp className="h-4 w-4 text-green-600" />
-                ) : (
-                  <TrendingDown className="h-4 w-4 text-red-600" />
-                )}
-                <span
-                  className={
-                    summaryStats.month.isPositive
-                      ? "text-green-600"
-                      : "text-red-600"
-                  }
-                >
-                  {summaryStats.month.change}% от прошлого месяца
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Analytics Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -376,7 +315,7 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
       <Card className="bg-gradient-to-br from-slate-50 to-white border border-slate-200">
         <CardHeader>
           <CardTitle className="text-lg">Инциденты по категориям</CardTitle>
-          <CardDescription>Распределение инцидентов в этом месяце</CardDescription>
+          <CardDescription>Распределение инцидент��в в этом месяце</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col lg:flex-row items-center justify-center gap-8">
