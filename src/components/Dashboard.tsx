@@ -253,15 +253,27 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
 
       {/* Analytics Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Line Chart - Incidents by Hour */}
+        {/* Line Chart - Incidents Distribution */}
         <Card className="bg-gradient-to-br from-slate-50 to-white border border-slate-200">
           <CardHeader>
-            <CardTitle className="text-lg">Инциденты по часам</CardTitle>
-            <CardDescription>Распределение событий за сегодня</CardDescription>
+            <CardTitle className="text-lg">
+              {timePeriod === 'day'
+                ? 'Инциденты по часам'
+                : timePeriod === 'week'
+                ? 'Инциденты по дням недели'
+                : 'Инциденты по неделям'}
+            </CardTitle>
+            <CardDescription>
+              {timePeriod === 'day'
+                ? 'Распределение событий за сегодня'
+                : timePeriod === 'week'
+                ? 'Данные за текущую неделю'
+                : 'Данные за текущий месяц'}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={incidentsByHour}>
+              <LineChart data={currentChartData.hourly}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis dataKey="hour" stroke="#64748b" />
                 <YAxis stroke="#64748b" />
@@ -289,13 +301,19 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
         <Card className="bg-gradient-to-br from-slate-50 to-white border border-slate-200">
           <CardHeader>
             <CardTitle className="text-lg">Инциденты по дням недели</CardTitle>
-            <CardDescription>Данные за текущую неделю</CardDescription>
+            <CardDescription>
+              {timePeriod === 'day'
+                ? 'Данные за сегодня'
+                : timePeriod === 'week'
+                ? 'Данные за текущую неделю'
+                : 'Среднее за текущий месяц'}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={incidentsByDay}>
+              <BarChart data={currentChartData.daily}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="day" stroke="#64748b" />
+                <XAxis dataKey={timePeriod === 'day' ? 'day' : 'day'} stroke="#64748b" />
                 <YAxis stroke="#64748b" />
                 <Tooltip
                   contentStyle={{
@@ -315,7 +333,7 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
       <Card className="bg-gradient-to-br from-slate-50 to-white border border-slate-200">
         <CardHeader>
           <CardTitle className="text-lg">Инциденты по категориям</CardTitle>
-          <CardDescription>Распределение инцидент��в в этом месяце</CardDescription>
+          <CardDescription>Распределение инцидентов в этом месяце</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col lg:flex-row items-center justify-center gap-8">
@@ -424,7 +442,7 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
         {/* AI Camera Activity */}
         <Card>
           <CardHeader>
-            <CardTitle>Активность ИИ-камер</CardTitle>
+            <CardTitle>Активность ��И-камер</CardTitle>
             <CardDescription>Мониторинг системы безопасности</CardDescription>
           </CardHeader>
           <CardContent>
