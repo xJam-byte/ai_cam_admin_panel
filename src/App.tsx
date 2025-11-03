@@ -1,42 +1,62 @@
 // src/App.tsx
-import { useState } from 'react';
-import { BrowserRouter, Routes, Route, NavLink, Outlet, useNavigate, useParams } from 'react-router-dom';
-import { Home, AlertTriangle, Camera, Menu, LogOut } from 'lucide-react';
+import { useState } from "react";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  NavLink,
+  Outlet,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
+import { Home, AlertTriangle, Camera, Menu, LogOut } from "lucide-react";
+import { useEffect } from "react";
+import * as api from "./lib/api";
+import { Button } from "./components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "./components/ui/sheet";
 
-import { Button } from './components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from './components/ui/sheet';
-
-import Dashboard from './components/pages/Dashboard';
-import IncidentsPage from './components/pages/IncidentsPage';
-import IncidentDetails from './components/pages/IncidentDetails';
- // страница логина (из предыдущего ответа)
-import ProtectedRoute from './components/ProtectedRoute'; // защищает приватные роуты
-import { AuthProvider, useAuth } from './providers/AuthProvider'; // провайдер авторизации
-import LoginPage from './components/pages/Login';
-
+import Dashboard from "./components/pages/Dashboard";
+import IncidentsPage from "./components/pages/IncidentsPage";
+import IncidentDetails from "./components/pages/IncidentDetails";
+// страница логина (из предыдущего ответа)
+import ProtectedRoute from "./components/ProtectedRoute"; // защищает приватные роуты
+import { AuthProvider, useAuth } from "./providers/AuthProvider"; // провайдер авторизации
+import LoginPage from "./components/pages/Login";
 function NavigationMenu({ onNavigate }: { onNavigate?: () => void }) {
   const linkBase =
-    'justify-start w-full text-left [&.active]:bg-slate-900 [&.active]:text-white';
+    "justify-start w-full text-left [&.active]:bg-slate-900 [&.active]:text-white";
   return (
     <nav className="flex flex-col gap-2">
-      <NavLink to="/" className={({ isActive }) => `btn ${linkBase} ${isActive ? 'active' : ''}`} onClick={onNavigate as any}>
+      <NavLink
+        to="/"
+        className={({ isActive }) =>
+          `btn ${linkBase} ${isActive ? "active" : ""}`
+        }
+        onClick={onNavigate as any}
+      >
         <Button variant="ghost" className="justify-start w-full">
           <Home className="mr-2 h-4 w-4" />
           Главная панель
         </Button>
       </NavLink>
 
-      <NavLink to="/incidents" className={({ isActive }) => `btn ${linkBase} ${isActive ? 'active' : ''}`} onClick={onNavigate as any}>
+      <NavLink
+        to="/incidents"
+        className={({ isActive }) =>
+          `btn ${linkBase} ${isActive ? "active" : ""}`
+        }
+        onClick={onNavigate as any}
+      >
         <Button variant="ghost" className="justify-start w-full">
           <AlertTriangle className="mr-2 h-4 w-4" />
           Инциденты
         </Button>
       </NavLink>
 
-      <Button variant="ghost" className="justify-start" disabled>
+      {/* <Button variant="ghost" className="justify-start" disabled>
         <Camera className="mr-2 h-4 w-4" />
         ИИ-камеры (скоро)
-      </Button>
+      </Button> */}
     </nav>
   );
 }
@@ -44,6 +64,27 @@ function NavigationMenu({ onNavigate }: { onNavigate?: () => void }) {
 function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout } = useAuth();
+  const [schoolName, setSchoolName] = useState<string>("");
+  useEffect(() => {
+    let ignore = false;
+    async function load() {
+      if (!user?.schoolId) {
+        setSchoolName("");
+        return;
+      }
+      try {
+        const b = await api.getSchoolById(user.schoolId);
+        // console.log(b);
+        if (!ignore) setSchoolName(b.name);
+      } catch {
+        if (!ignore) setSchoolName("—");
+      }
+    }
+    load();
+    return () => {
+      ignore = true;
+    };
+  }, [user?.schoolId]);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -63,10 +104,10 @@ function Layout() {
                 </div>
               </SheetContent>
             </Sheet>
-            <h1 className="text-slate-900">{console.log(user)}Школа</h1>
+            <h1 className="text-slate-900">Школа: {schoolName}</h1>
             <span className="hidden sm:inline text-slate-500">•</span>
             <span className="hidden sm:inline text-slate-600">
-              Директор: {user?.username || '—'}
+              Директор: {user?.username || "—"}
             </span>
           </div>
 
@@ -101,7 +142,7 @@ function Layout() {
 /** Роут-обёртки, чтобы пробросить коллбеки как в старом коде */
 function DashboardRoute() {
   const navigate = useNavigate();
-  return <Dashboard onNavigateToIncidents={() => navigate('/incidents')} />;
+  return <Dashboard onNavigateToIncidents={() => navigate("/incidents")} />;
 }
 
 function IncidentsRoute() {
@@ -113,7 +154,9 @@ function IncidentDetailsRoute() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   if (!id) return null;
-  return <IncidentDetails incidentId={id} onBack={() => navigate('/incidents')} />;
+  return (
+    <IncidentDetails incidentId={id} onBack={() => navigate("/incidents")} />
+  );
 }
 
 export default function App() {
@@ -123,7 +166,7 @@ export default function App() {
         <Routes>
           {/* Публично: логин */}
           <Route path="/login" element={<LoginPage />} />
-          
+
           {/* Приватно: всё остальное */}
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
