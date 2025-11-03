@@ -1,56 +1,49 @@
+// src/App.tsx
 import { useState } from 'react';
-import { Home, AlertTriangle, Camera, Menu } from 'lucide-react';
+import { BrowserRouter, Routes, Route, NavLink, Outlet, useNavigate, useParams } from 'react-router-dom';
+import { Home, AlertTriangle, Camera, Menu, LogOut } from 'lucide-react';
+
 import { Button } from './components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from './components/ui/sheet';
-import Dashboard from './components/Dashboard';
-import IncidentsPage from './components/IncidentsPage';
-import IncidentDetails from './components/IncidentDetails';
 
-export default function App() {
-  const [currentPage, setCurrentPage] = useState<'dashboard' | 'incidents' | 'incident-details'>('dashboard');
-  const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+import Dashboard from './components/pages/Dashboard';
+import IncidentsPage from './components/pages/IncidentsPage';
+import IncidentDetails from './components/pages/IncidentDetails';
+ // страница логина (из предыдущего ответа)
+import ProtectedRoute from './components/ProtectedRoute'; // защищает приватные роуты
+import { AuthProvider, useAuth } from './providers/AuthProvider'; // провайдер авторизации
+import LoginPage from './components/pages/Login';
 
-  const handleViewIncidentDetails = (id: string) => {
-    setSelectedIncidentId(id);
-    setCurrentPage('incident-details');
-  };
-
-  const handleBackToIncidents = () => {
-    setCurrentPage('incidents');
-    setSelectedIncidentId(null);
-  };
-
-  const NavigationMenu = () => (
+function NavigationMenu({ onNavigate }: { onNavigate?: () => void }) {
+  const linkBase =
+    'justify-start w-full text-left [&.active]:bg-slate-900 [&.active]:text-white';
+  return (
     <nav className="flex flex-col gap-2">
-      <Button
-        variant={currentPage === 'dashboard' ? 'default' : 'ghost'}
-        className="justify-start"
-        onClick={() => {
-          setCurrentPage('dashboard');
-          setSidebarOpen(false);
-        }}
-      >
-        <Home className="mr-2 h-4 w-4" />
-        Главная панель
-      </Button>
-      <Button
-        variant={currentPage === 'incidents' || currentPage === 'incident-details' ? 'default' : 'ghost'}
-        className="justify-start"
-        onClick={() => {
-          setCurrentPage('incidents');
-          setSidebarOpen(false);
-        }}
-      >
-        <AlertTriangle className="mr-2 h-4 w-4" />
-        Инциденты
-      </Button>
-      <Button variant="ghost" className="justify-start">
+      <NavLink to="/" className={({ isActive }) => `btn ${linkBase} ${isActive ? 'active' : ''}`} onClick={onNavigate as any}>
+        <Button variant="ghost" className="justify-start w-full">
+          <Home className="mr-2 h-4 w-4" />
+          Главная панель
+        </Button>
+      </NavLink>
+
+      <NavLink to="/incidents" className={({ isActive }) => `btn ${linkBase} ${isActive ? 'active' : ''}`} onClick={onNavigate as any}>
+        <Button variant="ghost" className="justify-start w-full">
+          <AlertTriangle className="mr-2 h-4 w-4" />
+          Инциденты
+        </Button>
+      </NavLink>
+
+      <Button variant="ghost" className="justify-start" disabled>
         <Camera className="mr-2 h-4 w-4" />
-        ИИ-камеры
+        ИИ-камеры (скоро)
       </Button>
     </nav>
   );
+}
+
+function Layout() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user, logout } = useAuth();
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -66,19 +59,26 @@ export default function App() {
               </SheetTrigger>
               <SheetContent side="left" className="w-64">
                 <div className="mt-8">
-                  <NavigationMenu />
+                  <NavigationMenu onNavigate={() => setSidebarOpen(false)} />
                 </div>
               </SheetContent>
             </Sheet>
-            <h1 className="text-slate-900">Школа №42</h1>
+            <h1 className="text-slate-900">{console.log(user)}Школа</h1>
             <span className="hidden sm:inline text-slate-500">•</span>
-            <span className="hidden sm:inline text-slate-600">Директор: Иванова А.С.</span>
+            <span className="hidden sm:inline text-slate-600">
+              Директор: {user?.username || '—'}
+            </span>
           </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-3">
             <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-green-50 rounded-lg">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
               <span className="text-green-700">Система активна</span>
             </div>
+            <Button variant="ghost" onClick={logout} title="Выйти">
+              <LogOut className="h-4 w-4 mr-2" />
+              Выйти
+            </Button>
           </div>
         </div>
       </header>
@@ -91,20 +91,49 @@ export default function App() {
 
         {/* Main Content */}
         <main className="flex-1 p-4 lg:p-8">
-          {currentPage === 'dashboard' && (
-            <Dashboard onNavigateToIncidents={() => setCurrentPage('incidents')} />
-          )}
-          {currentPage === 'incidents' && (
-            <IncidentsPage onViewDetails={handleViewIncidentDetails} />
-          )}
-          {currentPage === 'incident-details' && selectedIncidentId && (
-            <IncidentDetails 
-              incidentId={selectedIncidentId}
-              onBack={handleBackToIncidents}
-            />
-          )}
+          <Outlet />
         </main>
       </div>
     </div>
+  );
+}
+
+/** Роут-обёртки, чтобы пробросить коллбеки как в старом коде */
+function DashboardRoute() {
+  const navigate = useNavigate();
+  return <Dashboard onNavigateToIncidents={() => navigate('/incidents')} />;
+}
+
+function IncidentsRoute() {
+  const navigate = useNavigate();
+  return <IncidentsPage onViewDetails={(id) => navigate(`/incidents/${id}`)} />;
+}
+
+function IncidentDetailsRoute() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  if (!id) return null;
+  return <IncidentDetails incidentId={id} onBack={() => navigate('/incidents')} />;
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Публично: логин */}
+          <Route path="/login" element={<LoginPage />} />
+          
+          {/* Приватно: всё остальное */}
+          <Route element={<ProtectedRoute />}>
+            <Route element={<Layout />}>
+              <Route path="/" element={<DashboardRoute />} />
+              <Route path="/incidents" element={<IncidentsRoute />} />
+              <Route path="/incidents/:id" element={<IncidentDetailsRoute />} />
+            </Route>
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
