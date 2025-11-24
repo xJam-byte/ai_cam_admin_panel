@@ -11,18 +11,23 @@ export default function LoginPage() {
   const nav = useNavigate();
   const [sp] = useSearchParams();
 
-  const [username, setU] = useState("");
-  const [password, setP] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [schoolRaw, setSchoolRaw] = useState(""); // ID или название — опционально
-  const [loading, setL] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setErr(null);
-    setL(true);
+    setError(null);
+    setLoading(true);
     try {
-      const payload: any = {
+      const payload: {
+        username: string;
+        password: string;
+        schoolId?: string;
+        schoolName?: string;
+      } = {
         username: username.trim(),
         password,
       };
@@ -45,14 +50,14 @@ export default function LoginPage() {
       nav(sp.get("next") || "/", { replace: true });
     } catch (e: any) {
       const msg = (e?.message || "").toLowerCase();
-      if (msg.includes("invalid credentials")) setErr("Неверный логин или пароль.");
+      if (msg.includes("invalid credentials")) setError("Неверный логин или пароль.");
       else if (msg.includes("provide schoolid or schoolname"))
-        setErr("Укажите школу (ID или название) или оставьте пустым, если на бэке настроено авто-определение одной школы.");
+        setError("Укажите школу (ID или название) или оставьте пустым, если на бэке настроено авто-определение одной школы.");
       else if (msg.includes("unauthorized"))
-        setErr("Сессия недействительна. Войдите снова.");
-      else setErr("Не удалось войти. Попробуйте ещё раз.");
+        setError("Сессия недействительна. Войдите снова.");
+      else setError("Не удалось войти. Попробуйте ещё раз.");
     } finally {
-      setL(false);
+      setLoading(false);
     }
   }
 
@@ -77,7 +82,7 @@ export default function LoginPage() {
               className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[15px] outline-none focus:border-slate-300"
               placeholder="Логин"
               value={username}
-              onChange={(e) => setU(e.target.value)}
+              onChange={(e) => setUsername(e.target.value)}
               autoFocus
             />
 
@@ -86,7 +91,7 @@ export default function LoginPage() {
               type="password"
               placeholder="Пароль"
               value={password}
-              onChange={(e) => setP(e.target.value)}
+              onChange={(e) => setPassword(e.target.value)}
             />
 
             <input
@@ -96,9 +101,9 @@ export default function LoginPage() {
               onChange={(e) => setSchoolRaw(e.target.value)}
             />
 
-            {err && (
+            {error && (
               <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                {err}
+                {error}
               </div>
             )}
 

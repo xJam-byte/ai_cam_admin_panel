@@ -2,8 +2,6 @@
 import { useState } from "react";
 import {
   AlertTriangle,
-  ChevronRight,
-  Sparkles,
   TrendingUp,
   TrendingDown,
 } from "lucide-react";
@@ -15,7 +13,6 @@ import {
   CardTitle,
 } from "../ui/card";
 import { Button } from "../ui/button";
-import { Badge } from "../ui/badge";
 import {
   LineChart,
   Line,
@@ -183,12 +180,6 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
         </>
       )}
 
-      {/* Recent */}
-      {/* <RecentEventsCard
-        loading={loading}
-        recent={data?.recent || []}
-        onNavigate={onNavigateToIncidents}
-      /> */}
     </div>
   );
 }
@@ -295,65 +286,3 @@ function PieCard({ data }: { data: any[] }) {
   );
 }
 
-function RecentEventsCard({
-  loading,
-  recent,
-  onNavigate,
-}: {
-  loading: boolean;
-  recent: any[];
-  onNavigate: () => void;
-}) {
-  return (
-    <div className="grid lg:grid-cols-3 gap-6">
-      <Card className="lg:col-span-2">
-        <CardHeader>
-          <CardTitle>Последние инциденты</CardTitle>
-          <CardDescription>Зафиксированные события</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-slate-500">Загрузка…</div>
-          ) : (
-            <div className="space-y-3">
-              {recent.map((incident) => (
-                <div
-                  key={incident.id}
-                  className="flex items-center justify-between p-4 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
-                >
-                  <div className="flex items-center gap-3 flex-1">
-                    <div className="flex items-center justify-center w-10 h-10 bg-purple-100 rounded-lg">
-                      <Sparkles className="h-5 w-5 text-purple-600" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-slate-900">
-                          {incident.description}
-                        </span>
-                        <Badge
-                          variant="outline"
-                          className="text-purple-600 border-purple-300"
-                        >
-                          AI
-                        </Badge>
-                      </div>
-                      <span className="text-slate-500">{incident.time}</span>
-                    </div>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-slate-400" />
-                </div>
-              ))}
-            </div>
-          )}
-          <Button
-            variant="outline"
-            className="w-full mt-6"
-            onClick={onNavigate}
-          >
-            Перейти ко всем инцидентам
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}

@@ -27,7 +27,7 @@ import {
 import { Separator } from "../ui/separator";
 import { Alert, AlertDescription } from "../ui/alert";
 import { httpGet, httpPatch } from "../../lib/http";
-import type { EventItem } from "../../lib"; // поправь путь, если другой
+import type { EventItem } from "../../lib/events";
 
 interface IncidentDetailsProps {
   incidentId: string;
@@ -39,7 +39,7 @@ type StatusVal = "new" | "in-progress" | "resolved";
 function toDate(val: string | number | undefined | null): Date | null {
   if (val == null) return null;
   try {
-    return new Date(val as any);
+    return new Date(val);
   } catch {
     return null;
   }
@@ -88,7 +88,7 @@ export default function IncidentDetails({
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const meta = (event?.meta as any) || {};
+  const meta: Record<string, any> = event?.meta || {};
   const source: string = meta.source || "ai";
   const status: StatusVal = (meta.status as StatusVal) || "new";
   const [statusLocal, setStatusLocal] = useState<StatusVal>(status);
@@ -116,7 +116,7 @@ export default function IncidentDetails({
         const e = await httpGet<EventItem>(`/events/${incidentId}`);
         if (!cancelled) {
           setEvent(e);
-          setStatusLocal(((e.meta as any)?.status as StatusVal) || "new");
+          setStatusLocal((e.meta?.status as StatusVal) || "new");
         }
       } catch (err1: any) {
         // fallback: если нет /events/:id, пробуем /events?limit=1&offset=0&from=... (мало ли)
@@ -221,10 +221,10 @@ export default function IncidentDetails({
                       className="w-full h-full object-contain bg-black"
                     />
                   )}
-                  <div className="absolute top-3 left-3 bg-red-500 text-white px-3 py-1.5 rounded flex items-center gap-2">
+                  {/* <div className="absolute top-3 left-3 bg-red-500 text-white px-3 py-1.5 rounded flex items-center gap-2">
                     <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
                     {videoUrl ? "REC" : "IMAGE"}
-                  </div>
+                  </div> */}
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-4">
                     <div className="flex items-center justify-between text-white text-sm">
                       <span className="flex items-center gap-2">
@@ -241,34 +241,6 @@ export default function IncidentDetails({
               </CardContent>
             </Card>
           )}
-
-          {/* Описание */}
-          {/* <Card>
-            <CardHeader>
-              <CardTitle>Описание инцидента</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <p className="text-slate-500">Загрузка…</p>
-              ) : (
-                <>
-                  <p className="text-slate-700 leading-relaxed">
-                    {meta.fullDescription ||
-                      meta.details ||
-                      "Подробное описание отсутствует."}
-                  </p>
-                  {participants && (
-                    <p className="text-slate-600 mt-3">
-                      <span className="font-medium text-slate-700">
-                        Участники:
-                      </span>{" "}
-                      {participants}
-                    </p>
-                  )}
-                </>
-              )}
-            </CardContent>
-          </Card> */}
         </div>
 
         {/* Sidebar */}
@@ -328,43 +300,6 @@ export default function IncidentDetails({
               </div>
             </CardContent>
           </Card>
-
-          {/* Статус */}
-          {/* <Card>
-            <CardHeader>
-              <CardTitle>Управление статусом</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-slate-700">Текущий статус</label>
-                <Select
-                  value={statusLocal}
-                  onValueChange={(v) => setStatusLocal(v as StatusVal)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="new">Новый</SelectItem>
-                    <SelectItem value="in-progress">В работе</SelectItem>
-                    <SelectItem value="resolved">Решен</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Button
-                className="w-full"
-                variant="outline"
-                onClick={handleUpdateStatus}
-                disabled={!event || savingStatus}
-              >
-                {savingStatus ? "Обновляем…" : "Обновить статус"}
-              </Button>
-              {saveMsg && (
-                <p className="text-xs text-slate-500 text-center">{saveMsg}</p>
-              )}
-            </CardContent>
-          </Card> */}
         </div>
       </div>
     </div>

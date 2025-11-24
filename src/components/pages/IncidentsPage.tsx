@@ -37,13 +37,12 @@ import {
   DialogFooter,
 } from "../ui/dialog";
 import { Label } from "../ui/label";
-import { Textarea } from "../ui/textarea";
 
 import {
   listEvents,
   type EventItem,
   type ListEventsParams,
-} from "../../lib/events"; // <- если у тебя другой путь — поправь: "../../lib/events"
+} from "../../lib/events";
 import { httpGet, httpPost } from "../../lib/http";
 
 type TimePeriod = "day" | "week" | "month";
@@ -53,7 +52,29 @@ interface IncidentsPageProps {
   schoolId?: string;
 }
 
-/* --- helpers --- */
+/* ------------------ helpers + labels ------------------ */
+
+const EVENT_TYPE_LABELS: Record<string, string> = {
+  person: "Обнаружен человек",
+  crowd: "Скопление людей",
+  zone_violation: "Нарушение зоны",
+  fight_1v1: "Драка 1-на-1",
+  fight_group: "Массовая драка",
+  accident: "Несчастный случай",
+  scream: "Крик",
+  profanity: "Нецензурная лексика",
+  SOS: "Сигнал SOS",
+  profanity_scream: "Крик + нецензурная лексика",
+  abuse: "Оскорбления",
+  other: "Другое",
+};
+
+const EVENT_TYPE_OPTIONS: { value: string; label: string }[] = [
+  { value: "profanity", label: EVENT_TYPE_LABELS.profanity },
+  { value: "SOS", label: EVENT_TYPE_LABELS.SOS },
+  { value: "abuse", label: EVENT_TYPE_LABELS.abuse },
+  { value: "other", label: EVENT_TYPE_LABELS.other },
+];
 
 function toDate(val: string | number): Date | null {
   try {
@@ -101,6 +122,13 @@ function getSourceIcon(source?: string) {
   );
 }
 
+function getTypeLabel(type?: string) {
+  if (!type) return "—";
+  return EVENT_TYPE_LABELS[type] || type.toUpperCase();
+}
+
+/* ------------------ component ------------------ */
+
 export default function IncidentsPage({
   onViewDetails,
   schoolId,
@@ -129,6 +157,7 @@ export default function IncidentsPage({
   const [manualCameraId, setManualCameraId] = useState<string>("");
   const [cameras, setCameras] = useState<{ id: string; name: string }[]>([]);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // period range -> from/to ISO
   const periodRange = useMemo(() => {
@@ -144,7 +173,6 @@ export default function IncidentsPage({
   useEffect(() => {
     (async () => {
       try {
-        // подставь реальный роут если иной
         const list = await httpGet<{ id: string; name: string }[]>("/cameras");
         setCameras(list || []);
       } catch {
@@ -186,38 +214,47 @@ export default function IncidentsPage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [periodRange.from, periodRange.to, typeFilter, limit, offset, schoolId]);
 
-  // client-side refine: status/source from meta + search
+  // client-side refine: status/source from meta + search (memoized)
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
+
+    if (statusFilter === "all" && sourceFilter === "all" && !q) {
+      return rows;
+    }
+
     return rows.filter((r) => {
-      const meta = (r.meta as any) || {};
-      const source = (meta.source as string) || "ai";
-      const status = (meta.status as string) || "new";
-      const description =
-        (meta.description as string) || (meta.text as string) || r.type;
-      const participants = (meta.participants as string) || "";
-      const cameraName = r.camera?.name || "";
+      const meta: Record<string, any> = r.meta || {};
+      const source = meta.source || "ai";
+      const status = meta.status || "new";
 
-      const okStatus = statusFilter === "all" || status === statusFilter;
-      const okSource = sourceFilter === "all" || source === sourceFilter;
-      const okSearch =
-        !q ||
-        description.toLowerCase().includes(q) ||
-        participants.toLowerCase().includes(q) ||
-        cameraName.toLowerCase().includes(q);
+      if (statusFilter !== "all" && status !== statusFilter) return false;
+      if (sourceFilter !== "all" && source !== sourceFilter) return false;
 
-      return okStatus && okSource && okSearch;
+      if (q) {
+        const description =
+          meta.description || meta.text || getTypeLabel(r.type);
+        const participants = meta.participants || "";
+        const cameraName = r.camera?.name || "";
+        const typeLabel = getTypeLabel(r.type);
+
+        const searchableText =
+          `${description} ${participants} ${cameraName} ${typeLabel}`.toLowerCase();
+
+        if (!searchableText.includes(q)) return false;
+      }
+
+      return true;
     });
   }, [rows, statusFilter, sourceFilter, searchQuery]);
 
   async function handleSaveManual() {
     if (!manualCameraId) return;
     setSaving(true);
+    setSaveError(null);
     try {
       await httpPost("/events/ingest", {
         camera_id: manualCameraId,
         type: manualType,
-        // timestamp НЕ отправляем — БД ставит now()
         meta: {
           source: "manual",
           status: "new",
@@ -230,9 +267,10 @@ export default function IncidentsPage({
       setManualParticipants("");
       setManualType("other");
       setManualCameraId("");
+      setSaveError(null);
       await fetchEvents();
     } catch (e: any) {
-      alert(e?.message || "Не удалось сохранить");
+      setSaveError(e?.message || "Не удалось сохранить");
     } finally {
       setSaving(false);
     }
@@ -265,12 +303,13 @@ export default function IncidentsPage({
           </Select>
 
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
+            {/* <DialogTrigger asChild>
               <Button className="gap-2">
                 <Plus className="h-4 w-4" />
                 Добавить вручную
               </Button>
-            </DialogTrigger>
+            </DialogTrigger> */}
+
             <DialogContent className="sm:max-w-[520px]">
               <DialogHeader>
                 <DialogTitle>Новый инцидент</DialogTitle>
@@ -278,6 +317,7 @@ export default function IncidentsPage({
                   Заполните информацию о вручную зафиксированном событии
                 </DialogDescription>
               </DialogHeader>
+
               <div className="space-y-4 py-2">
                 <div className="space-y-2">
                   <Label>Камера</Label>
@@ -305,22 +345,11 @@ export default function IncidentsPage({
                       <SelectValue placeholder="Тип" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="other">Другое</SelectItem>
-                      <SelectItem value="scream">Крик</SelectItem>
-                      <SelectItem value="profanity">
-                        Нецензурная лексика
-                      </SelectItem>
-                      <SelectItem value="abuse">Оскорбления</SelectItem>
-                      <SelectItem value="fight_1v1">Драка 1-на-1</SelectItem>
-                      <SelectItem value="fight_group">
-                        Массовая драка
-                      </SelectItem>
-                      <SelectItem value="zone_violation">
-                        Нарушение зоны
-                      </SelectItem>
-                      <SelectItem value="accident">
-                        Несчастный случай
-                      </SelectItem>
+                      {EVENT_TYPE_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -334,6 +363,7 @@ export default function IncidentsPage({
                     onChange={(e) => setManualDescription(e.target.value)}
                   />
                 </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="participants">Участники</Label>
                   <Input
@@ -344,6 +374,13 @@ export default function IncidentsPage({
                   />
                 </div>
               </div>
+
+              {saveError && (
+                <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  {saveError}
+                </div>
+              )}
+
               <DialogFooter>
                 <Button
                   variant="outline"
@@ -405,19 +442,16 @@ export default function IncidentsPage({
               </Select>
 
               <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-[200px]">
                   <SelectValue placeholder="Тип события" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Все типы</SelectItem>
-                  <SelectItem value="scream">Крик</SelectItem>
-                  <SelectItem value="profanity">Нецензурная лексика</SelectItem>
-                  <SelectItem value="abuse">Оскорбления</SelectItem>
-                  <SelectItem value="fight_1v1">Драка 1-на-1</SelectItem>
-                  <SelectItem value="fight_group">Массовая драка</SelectItem>
-                  <SelectItem value="zone_violation">Нарушение зоны</SelectItem>
-                  <SelectItem value="accident">Несчастный случай</SelectItem>
-                  <SelectItem value="other">Другое</SelectItem>
+                  {EVENT_TYPE_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -502,8 +536,10 @@ export default function IncidentsPage({
                   const meta = (e.meta as any) || {};
                   const source = meta.source || "ai";
                   const status = meta.status || "new";
+
                   const description =
-                    meta.description || meta.text || e.type.toUpperCase();
+                    meta.description || meta.text || getTypeLabel(e.type);
+
                   return (
                     <TableRow
                       key={e.id}
@@ -565,9 +601,12 @@ export default function IncidentsPage({
             const meta = (e.meta as any) || {};
             const source = meta.source || "ai";
             const status = meta.status || "new";
+
             const description =
-              meta.description || meta.text || e.type.toUpperCase();
+              meta.description || meta.text || getTypeLabel(e.type);
+
             const participants = meta.participants || "";
+
             return (
               <Card
                 key={e.id}
@@ -584,12 +623,15 @@ export default function IncidentsPage({
                     </div>
                     <ChevronRight className="h-5 w-5 text-slate-400 flex-shrink-0" />
                   </div>
+
                   <div className="flex items-center gap-2 mb-2">
                     {getSourceIcon(source)}
                   </div>
+
                   {participants && (
                     <div className="text-slate-600 mb-3">{participants}</div>
                   )}
+
                   <div className="flex items-center justify-between">
                     {getStatusBadge(status)}
                     <Button variant="ghost" size="sm">

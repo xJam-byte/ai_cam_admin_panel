@@ -1,5 +1,5 @@
 // src/App.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   BrowserRouter,
   Routes,
@@ -10,7 +10,6 @@ import {
   useParams,
 } from "react-router-dom";
 import { Home, AlertTriangle, Camera, Menu, LogOut } from "lucide-react";
-import { useEffect } from "react";
 import * as api from "./lib/api";
 import { Button } from "./components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "./components/ui/sheet";
@@ -32,7 +31,7 @@ function NavigationMenu({ onNavigate }: { onNavigate?: () => void }) {
         className={({ isActive }) =>
           `btn ${linkBase} ${isActive ? "active" : ""}`
         }
-        onClick={onNavigate as any}
+        onClick={onNavigate}
       >
         <Button variant="ghost" className="justify-start w-full">
           <Home className="mr-2 h-4 w-4" />
@@ -45,7 +44,7 @@ function NavigationMenu({ onNavigate }: { onNavigate?: () => void }) {
         className={({ isActive }) =>
           `btn ${linkBase} ${isActive ? "active" : ""}`
         }
-        onClick={onNavigate as any}
+        onClick={onNavigate}
       >
         <Button variant="ghost" className="justify-start w-full">
           <AlertTriangle className="mr-2 h-4 w-4" />
@@ -53,10 +52,6 @@ function NavigationMenu({ onNavigate }: { onNavigate?: () => void }) {
         </Button>
       </NavLink>
 
-      {/* <Button variant="ghost" className="justify-start" disabled>
-        <Camera className="mr-2 h-4 w-4" />
-        ИИ-камеры (скоро)
-      </Button> */}
     </nav>
   );
 }
@@ -74,7 +69,6 @@ function Layout() {
       }
       try {
         const b = await api.getSchoolById(user.schoolId);
-        // console.log(b);
         if (!ignore) setSchoolName(b.name);
       } catch {
         if (!ignore) setSchoolName("—");
