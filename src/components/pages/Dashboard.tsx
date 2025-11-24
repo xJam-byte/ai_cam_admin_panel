@@ -57,8 +57,7 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
         : timePeriod === "week"
         ? "Последние 7 дней"
         : "Последние 30 дней",
-    compareText:
-      timePeriod === "day" ? "к вчера" : "к предыдущему периоду",
+    compareText: timePeriod === "day" ? "к вчера" : "к предыдущему периоду",
   };
 
   return (
@@ -79,11 +78,7 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
               size="sm"
               onClick={() => setTimePeriod(p as TimePeriod)}
             >
-              {p === "day"
-                ? "День"
-                : p === "week"
-                ? "Неделя"
-                : "Месяц"}
+              {p === "day" ? "День" : p === "week" ? "Неделя" : "Месяц"}
             </Button>
           ))}
         </div>
@@ -128,9 +123,7 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
               )}
               <span
                 className={
-                  currentStats.isPositive
-                    ? "text-green-600"
-                    : "text-red-600"
+                  currentStats.isPositive ? "text-green-600" : "text-red-600"
                 }
               >
                 {loading || data?.changePct == null
@@ -191,11 +184,11 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
       )}
 
       {/* Recent */}
-      <RecentEventsCard
+      {/* <RecentEventsCard
         loading={loading}
         recent={data?.recent || []}
         onNavigate={onNavigateToIncidents}
-      />
+      /> */}
     </div>
   );
 }
@@ -312,7 +305,7 @@ function RecentEventsCard({
   onNavigate: () => void;
 }) {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="grid lg:grid-cols-3 gap-6">
       <Card className="lg:col-span-2">
         <CardHeader>
           <CardTitle>Последние инциденты</CardTitle>

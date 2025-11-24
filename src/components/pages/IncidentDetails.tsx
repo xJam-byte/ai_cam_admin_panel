@@ -243,7 +243,7 @@ export default function IncidentDetails({
           )}
 
           {/* Описание */}
-          <Card>
+          {/* <Card>
             <CardHeader>
               <CardTitle>Описание инцидента</CardTitle>
             </CardHeader>
@@ -268,7 +268,7 @@ export default function IncidentDetails({
                 </>
               )}
             </CardContent>
-          </Card>
+          </Card> */}
         </div>
 
         {/* Sidebar */}
@@ -330,7 +330,7 @@ export default function IncidentDetails({
           </Card>
 
           {/* Статус */}
-          <Card>
+          {/* <Card>
             <CardHeader>
               <CardTitle>Управление статусом</CardTitle>
             </CardHeader>
@@ -364,7 +364,7 @@ export default function IncidentDetails({
                 <p className="text-xs text-slate-500 text-center">{saveMsg}</p>
               )}
             </CardContent>
-          </Card>
+          </Card> */}
         </div>
       </div>
     </div>
