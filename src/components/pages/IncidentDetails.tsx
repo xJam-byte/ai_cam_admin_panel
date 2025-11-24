@@ -101,7 +101,7 @@ export default function IncidentDetails({
   const description: string =
     meta.description || meta.text || (event?.type ?? "Событие");
   const participants: string = meta.participants || "";
-  const location: string = meta.location || meta.place || "—";
+  const location: string = meta.location || meta.place || meta.transcript;
   const videoUrl = event?.videoUrl || null;
   const imageUrl = event?.imageUrl || null;
 
@@ -319,10 +319,10 @@ export default function IncidentDetails({
 
               <div className="flex items-start gap-3">
                 <div className="w-5 h-5 flex items-center justify-center">
-                  📍
+                  🎙️
                 </div>
                 <div>
-                  <div className="text-slate-500">Место</div>
+                  <div className="text-slate-500">Транскрипт</div>
                   <div className="text-slate-900">{location}</div>
                 </div>
               </div>
