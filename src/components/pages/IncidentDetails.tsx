@@ -6,7 +6,7 @@ import {
   Clock,
   Camera,
   Users,
-  Trash2, // <--- 1. Импортируем иконку
+  Trash2,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import {
@@ -20,8 +20,8 @@ import { Badge } from "../ui/badge";
 import { Separator } from "../ui/separator";
 import { Alert, AlertDescription } from "../ui/alert";
 import { httpGet, httpPatch } from "../../lib/http";
-import { type EventItem, deleteEvent } from "../../lib/events"; // <--- 2. Импортируем deleteEvent
-import { useAuth } from "../../providers/AuthProvider"; // <--- 3. Импортируем Auth
+import { type EventItem, deleteEvent } from "../../lib/events";
+import { useAuth } from "../../providers/AuthProvider";
 
 interface IncidentDetailsProps {
   incidentId: string;
@@ -78,7 +78,11 @@ export default function IncidentDetails({
   incidentId,
   onBack,
 }: IncidentDetailsProps) {
-  const { user } = useAuth(); // <--- 4. Получаем юзера
+  const { user } = useAuth();
+
+  // Логирование для проверки (посмотри в консоль браузера F12)
+  console.log("DETAILS PAGE USER:", user);
+
   const isAdmin = user?.role === "admin";
 
   const [event, setEvent] = useState<EventItem | null>(null);
@@ -136,7 +140,7 @@ export default function IncidentDetails({
 
     try {
       await deleteEvent(incidentId);
-      onBack(); // Возвращаемся в список, так как страницы больше нет
+      onBack();
     } catch (e: any) {
       alert("Ошибка при удалении: " + (e?.message || "Неизвестная ошибка"));
     }
@@ -182,16 +186,17 @@ export default function IncidentDetails({
           <p className="text-slate-600">{description}</p>
         </div>
 
-        {/* Кнопка удаления (только для админа) */}
-        {isAdmin && !loading && !loadError && (
+        {/* Кнопка удаления */}
+        {/* Я убрал variant="destructive" и прописал классы вручную, чтобы точно работало */}
+        {isAdmin && (
           <Button
-            variant="destructive" // Красная кнопка (если есть такой вариант в shadcn/ui)
             size="sm"
-            className="gap-2 bg-red-600 hover:bg-red-700 text-white"
+            className="gap-2 bg-red-600 hover:bg-red-700 text-white border-0"
             onClick={handleDelete}
+            disabled={loading} // Блокируем пока грузится, но не скрываем
           >
             <Trash2 className="h-4 w-4" />
-            Удалить
+            <span className="hidden sm:inline">Удалить</span>
           </Button>
         )}
 
@@ -262,7 +267,6 @@ export default function IncidentDetails({
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Информация */}
           <Card>
             <CardHeader>
               <CardTitle>Информация</CardTitle>
