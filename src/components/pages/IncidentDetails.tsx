@@ -80,11 +80,8 @@ export default function IncidentDetails({
 }: IncidentDetailsProps) {
   const { user } = useAuth();
 
-  // --- ЖЕСТКАЯ ПРОВЕРКА ---
-  const rawRole = user?.role || "";
-  // Убираем пробелы и приводим к нижнему регистру
-  const cleanRole = rawRole.trim().toLowerCase();
-  const isAdmin = cleanRole === "admin";
+  // Жесткая проверка. Если user.role "admin", переменная будет true.
+  const isAdmin = user?.role === "admin";
 
   const [event, setEvent] = useState<EventItem | null>(null);
   const [loading, setLoading] = useState(true);
@@ -141,51 +138,45 @@ export default function IncidentDetails({
     }
   }
 
-  // Обновление статуса (без изменений)
+  // Обновление статуса
   async function handleUpdateStatus() {
-    /* ... */
+    /* скрыто */
   }
 
   const headerRight = useMemo(() => <StatusBadge status={status} />, [status]);
 
   return (
     <div className="space-y-6">
-      {/* --- ВИЗУАЛЬНЫЙ ОТЛАДЧИК (Покажет точно, что видит код) --- */}
-      <div className="bg-slate-100 p-2 text-xs text-slate-500 font-mono border border-slate-300 rounded mb-4">
-        DEBUG INFO: Role=[{cleanRole}] IsAdmin=[{isAdmin ? "YES" : "NO"}]
-        {isAdmin && (
-          <span className="ml-2 text-green-600 font-bold">
-            ADMIN ACCESS GRANTED
-          </span>
-        )}
-      </div>
-
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={onBack}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div className="flex-1">
-          <h2 className="text-slate-900 mb-1">
-            Детали инцидента #{incidentId}
-          </h2>
-          <p className="text-slate-600">{description}</p>
+      {/* --- Header --- */}
+      <div className="flex items-center justify-between gap-4">
+        {/* ЛЕВАЯ ЧАСТЬ: Кнопка назад + Тексты */}
+        <div className="flex items-center gap-4 flex-1">
+          <Button variant="ghost" size="icon" onClick={onBack}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h2 className="text-slate-900 mb-1 font-semibold text-lg">
+              Детали инцидента #{incidentId.slice(0, 8)}...
+            </h2>
+            <p className="text-slate-600 text-sm">{description}</p>
+          </div>
         </div>
 
-        {/* КНОПКА УДАЛЕНИЯ */}
-        {/* Я убрал проверку loading и loadError, чтобы кнопка рендерилась всегда, если ты админ */}
-        {isAdmin && (
-          <button
-            // Используем обычный HTML button временно, чтобы исключить глюк компонента Button
-            className="flex items-center gap-2 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm font-medium transition-colors"
-            onClick={handleDelete}
-          >
-            <Trash2 className="h-4 w-4" />
-            Удалить
-          </button>
-        )}
+        {/* ПРАВАЯ ЧАСТЬ: Кнопки */}
+        <div className="flex items-center gap-3">
+          {/* 🛑 ЯВНАЯ КНОПКА УДАЛЕНИЯ (Без условий loading/error, чтобы видеть всегда) */}
+          {isAdmin ? (
+            <button
+              onClick={handleDelete}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors font-medium text-sm"
+            >
+              <Trash2 className="h-4 w-4" />
+              Удалить
+            </button>
+          ) : null}
 
-        {headerRight}
+          {headerRight}
+        </div>
       </div>
 
       {loadError && (
@@ -205,8 +196,8 @@ export default function IncidentDetails({
         </Alert>
       )}
 
-      {/* ... Остальной контент (видео, карточки) без изменений ... */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {(videoUrl || imageUrl) && (
             <Card>
@@ -237,13 +228,13 @@ export default function IncidentDetails({
           )}
         </div>
 
+        {/* Sidebar */}
         <div className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Информация</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* ... Инфо поля ... */}
               <div className="flex items-center gap-3">
                 <Calendar className="h-5 w-5 text-slate-400" />
                 <div>
@@ -271,6 +262,16 @@ export default function IncidentDetails({
                   <div className="text-slate-900">
                     {cameraName !== "—" ? cameraName : cameraId}
                   </div>
+                </div>
+              </div>
+              <Separator />
+              <div className="flex items-start gap-3">
+                <div className="w-5 h-5 flex items-center justify-center">
+                  🎙️
+                </div>
+                <div>
+                  <div className="text-slate-500">Транскрипт</div>
+                  <div className="text-slate-900">{location}</div>
                 </div>
               </div>
             </CardContent>
