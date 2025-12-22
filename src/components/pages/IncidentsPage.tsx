@@ -1,12 +1,12 @@
 // src/components/pages/IncidentsPage.tsx
 import { useEffect, useMemo, useState } from "react";
 import {
-  Plus,
   Filter,
   Search,
   Sparkles,
   User,
   ChevronRight,
+  Trash2, // Иконка удаления
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
@@ -33,23 +33,24 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
 } from "../ui/dialog";
 import { Label } from "../ui/label";
 
 import {
   listEvents,
+  deleteEvent, // Импорт функции удаления
   type EventItem,
   type ListEventsParams,
 } from "../../lib/events";
 import { httpGet, httpPost } from "../../lib/http";
+import { useAuth } from "../../providers/AuthProvider"; // Импорт Auth
 
 type TimePeriod = "day" | "week" | "month";
 
 interface IncidentsPageProps {
   onViewDetails: (id: string) => void;
-  schoolId?: string;
+  // schoolId из пропсов можно оставить, но приоритет будет у Auth
 }
 
 /* ------------------ helpers + labels ------------------ */
@@ -129,10 +130,12 @@ function getTypeLabel(type?: string) {
 
 /* ------------------ component ------------------ */
 
-export default function IncidentsPage({
-  onViewDetails,
-  schoolId,
-}: IncidentsPageProps) {
+export default function IncidentsPage({ onViewDetails }: IncidentsPageProps) {
+  const { user } = useAuth(); // Получаем пользователя
+  const isAdmin = user?.role === "admin";
+  // Если админ - undefined (видит всё), иначе ID школы юзера
+  const effectiveSchoolId = isAdmin ? undefined : user?.schoolId;
+
   // filters
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
@@ -191,8 +194,9 @@ export default function IncidentsPage({
         offset,
         from: periodRange.from,
         to: periodRange.to,
+        school_id: effectiveSchoolId, // Фильтр по школе
       };
-      if (schoolId) params.school_id = schoolId;
+
       if (typeFilter !== "all") params.type = typeFilter;
 
       const data = await listEvents(params);
@@ -212,7 +216,29 @@ export default function IncidentsPage({
   useEffect(() => {
     fetchEvents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [periodRange.from, periodRange.to, typeFilter, limit, offset, schoolId]);
+  }, [
+    periodRange.from,
+    periodRange.to,
+    typeFilter,
+    limit,
+    offset,
+    effectiveSchoolId,
+  ]);
+
+  // Функция удаления (только для админа)
+  const handleDeleteItem = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!isAdmin) return;
+    if (!window.confirm("Вы уверены, что хотите удалить эту запись?")) return;
+
+    try {
+      await deleteEvent(id);
+      // Обновляем список локально
+      setRows((prev) => prev.filter((item) => item.id !== id));
+    } catch (err) {
+      alert("Ошибка при удалении");
+    }
+  };
 
   // client-side refine: status/source from meta + search (memoized)
   const filtered = useMemo(() => {
@@ -284,13 +310,15 @@ export default function IncidentsPage({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-slate-900 mb-1">Журнал инцидентов</h2>
-          <p className="text-slate-600">Управление и мониторинг всех событий</p>
+          <p className="text-slate-600">
+            {isAdmin ? "Полный доступ (Администратор)" : "Мониторинг школы"}
+          </p>
         </div>
 
         <div className="flex gap-2">
           <Select
             value={period}
-            onValueChange={(v) => setPeriod(v as TimePeriod)}
+            onValueChange={(v: any) => setPeriod(v as TimePeriod)}
           >
             <SelectTrigger className="w-[160px]">
               <SelectValue placeholder="Период" />
@@ -462,7 +490,7 @@ export default function IncidentsPage({
             <span className="text-sm text-slate-500">Показывать по:</span>
             <Select
               value={String(limit)}
-              onValueChange={(v) => setLimit(Number(v))}
+              onValueChange={(v: any) => setLimit(Number(v))}
             >
               <SelectTrigger className="w-[100px]">
                 <SelectValue />
@@ -514,7 +542,7 @@ export default function IncidentsPage({
                 <TableHead>Источник</TableHead>
                 <TableHead>Описание</TableHead>
                 <TableHead>Статус</TableHead>
-                <TableHead className="w-[100px]">Действие</TableHead>
+                <TableHead className="w-[140px]">Действие</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -561,16 +589,30 @@ export default function IncidentsPage({
                       </TableCell>
                       <TableCell>{getStatusBadge(status)}</TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(ev) => {
-                            ev.stopPropagation();
-                            onViewDetails(e.id);
-                          }}
-                        >
-                          Подробнее
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(ev: any) => {
+                              ev.stopPropagation();
+                              onViewDetails(e.id);
+                            }}
+                          >
+                            Подробнее
+                          </Button>
+
+                          {/* КНОПКА УДАЛЕНИЯ ТОЛЬКО ДЛЯ АДМИНА */}
+                          {isAdmin && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                              onClick={(ev: any) => handleDeleteItem(ev, e.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
@@ -632,11 +674,23 @@ export default function IncidentsPage({
                     <div className="text-slate-600 mb-3">{participants}</div>
                   )}
 
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between border-t pt-3 mt-2">
                     {getStatusBadge(status)}
-                    <Button variant="ghost" size="sm">
-                      Подробнее
-                    </Button>
+                    <div className="flex gap-2">
+                      {isAdmin && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 h-8"
+                          onClick={(ev: any) => handleDeleteItem(ev, e.id)}
+                        >
+                          Удалить
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="sm" className="h-8">
+                        Подробнее
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

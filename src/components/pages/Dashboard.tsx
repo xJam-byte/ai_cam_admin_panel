@@ -23,6 +23,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { useAuth } from "../../providers/AuthProvider"; // Импорт Auth
 import { useEventsStats, type TimePeriod } from "../../hooks/useEventsStats";
 
 /* ------------------ labels ------------------ */
@@ -84,8 +85,16 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
+  const { user } = useAuth(); // Получаем юзера
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("day");
-  const { loading, error, data } = useEventsStats(timePeriod);
+
+  // Если админ -> undefined, иначе ID школы
+  const effectiveSchoolId = user?.role === "admin" ? undefined : user?.schoolId;
+
+  // Передаем фильтр в хук
+  const { loading, error, data } = useEventsStats(timePeriod, {
+    school_id: effectiveSchoolId,
+  });
 
   // переводим типы в русский (для pie)
   const incidentsByCategory =
@@ -116,7 +125,9 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
         <div>
           <h2 className="text-slate-900 mb-1">Панель мониторинга</h2>
           <p className="text-slate-600">
-            Обзор инцидентов и активности ИИ-камер
+            {user?.role === "admin"
+              ? "Обзор активности по всем школам"
+              : "Обзор инцидентов и активности ИИ-камер"}
           </p>
         </div>
 
