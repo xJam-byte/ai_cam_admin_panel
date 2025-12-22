@@ -6,7 +6,7 @@ import {
   Clock,
   Camera,
   Users,
-  Trash2,
+  Trash2, // Иконка удаления
 } from "lucide-react";
 import { Button } from "../ui/button";
 import {
@@ -80,10 +80,8 @@ export default function IncidentDetails({
 }: IncidentDetailsProps) {
   const { user } = useAuth();
 
-  // Логирование для проверки (посмотри в консоль браузера F12)
-  console.log("DETAILS PAGE USER:", user);
-
-  const isAdmin = user?.role === "admin";
+  // Проверка прав (учитываем регистр на всякий случай)
+  const isAdmin = user?.role === "admin" || user?.role === "Admin";
 
   const [event, setEvent] = useState<EventItem | null>(null);
   const [loading, setLoading] = useState(true);
@@ -146,7 +144,7 @@ export default function IncidentDetails({
     }
   }
 
-  // обновление статуса
+  // обновление статуса (без изменений)
   async function handleUpdateStatus() {
     if (!event) return;
     setSavingStatus(true);
@@ -186,14 +184,13 @@ export default function IncidentDetails({
           <p className="text-slate-600">{description}</p>
         </div>
 
-        {/* Кнопка удаления */}
-        {/* Я убрал variant="destructive" и прописал классы вручную, чтобы точно работало */}
+        {/* Кнопка удаления - ЯВНЫЕ СТИЛИ (без variant="destructive") */}
         {isAdmin && (
           <Button
             size="sm"
-            className="gap-2 bg-red-600 hover:bg-red-700 text-white border-0"
+            className="gap-2 bg-red-600 hover:bg-red-700 text-white border-0 shadow-sm"
             onClick={handleDelete}
-            disabled={loading} // Блокируем пока грузится, но не скрываем
+            disabled={loading}
           >
             <Trash2 className="h-4 w-4" />
             <span className="hidden sm:inline">Удалить</span>
