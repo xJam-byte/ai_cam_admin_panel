@@ -1,4 +1,3 @@
-// src/components/pages/IncidentDetails.tsx
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
@@ -7,6 +6,7 @@ import {
   Clock,
   Camera,
   Users,
+  Trash2, // <--- 1. Импортируем иконку
 } from "lucide-react";
 import { Button } from "../ui/button";
 import {
@@ -17,17 +17,11 @@ import {
   CardTitle,
 } from "../ui/card";
 import { Badge } from "../ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
 import { Separator } from "../ui/separator";
 import { Alert, AlertDescription } from "../ui/alert";
 import { httpGet, httpPatch } from "../../lib/http";
-import type { EventItem } from "../../lib/events";
+import { type EventItem, deleteEvent } from "../../lib/events"; // <--- 2. Импортируем deleteEvent
+import { useAuth } from "../../providers/AuthProvider"; // <--- 3. Импортируем Auth
 
 interface IncidentDetailsProps {
   incidentId: string;
@@ -84,6 +78,9 @@ export default function IncidentDetails({
   incidentId,
   onBack,
 }: IncidentDetailsProps) {
+  const { user } = useAuth(); // <--- 4. Получаем юзера
+  const isAdmin = user?.role === "admin";
+
   const [event, setEvent] = useState<EventItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -112,14 +109,12 @@ export default function IncidentDetails({
       setLoading(true);
       setLoadError(null);
       try {
-        // пробуем /events/:id
         const e = await httpGet<EventItem>(`/events/${incidentId}`);
         if (!cancelled) {
           setEvent(e);
           setStatusLocal((e.meta?.status as StatusVal) || "new");
         }
       } catch (err1: any) {
-        // fallback: если нет /events/:id, пробуем /events?limit=1&offset=0&from=... (мало ли)
         if (!cancelled)
           setLoadError(err1?.message || "Не удалось загрузить инцидент");
       } finally {
@@ -131,28 +126,40 @@ export default function IncidentDetails({
     };
   }, [incidentId]);
 
+  // Логика удаления
+  async function handleDelete() {
+    if (!isAdmin) return;
+    if (
+      !window.confirm("Вы уверены, что хотите удалить эту запись безвозвратно?")
+    )
+      return;
+
+    try {
+      await deleteEvent(incidentId);
+      onBack(); // Возвращаемся в список, так как страницы больше нет
+    } catch (e: any) {
+      alert("Ошибка при удалении: " + (e?.message || "Неизвестная ошибка"));
+    }
+  }
+
   // обновление статуса
   async function handleUpdateStatus() {
     if (!event) return;
     setSavingStatus(true);
     setSaveMsg(null);
     try {
-      // оптимистично
       const prev = event;
       const newMeta = { ...(prev.meta || {}), status: statusLocal };
       setEvent({ ...prev, meta: newMeta });
 
-      // Основной вариант: PATCH /events/:id  { meta: { ... } }
       try {
         await httpPatch(`/events/${event.id}`, { meta: newMeta });
       } catch (e1) {
-        // Фоллбэк, если у тебя отдельный роут для меты:
         await httpPatch(`/events/${event.id}/meta`, { meta: newMeta });
       }
       setSaveMsg("Статус обновлён.");
     } catch (e: any) {
       setSaveMsg(e?.message || "Не удалось обновить статус");
-      // при ошибке можно откатить локально, если надо
     } finally {
       setSavingStatus(false);
       setTimeout(() => setSaveMsg(null), 2500);
@@ -174,6 +181,20 @@ export default function IncidentDetails({
           </h2>
           <p className="text-slate-600">{description}</p>
         </div>
+
+        {/* Кнопка удаления (только для админа) */}
+        {isAdmin && !loading && !loadError && (
+          <Button
+            variant="destructive" // Красная кнопка (если есть такой вариант в shadcn/ui)
+            size="sm"
+            className="gap-2 bg-red-600 hover:bg-red-700 text-white"
+            onClick={handleDelete}
+          >
+            <Trash2 className="h-4 w-4" />
+            Удалить
+          </Button>
+        )}
+
         {headerRight}
       </div>
 
@@ -221,10 +242,6 @@ export default function IncidentDetails({
                       className="w-full h-full object-contain bg-black"
                     />
                   )}
-                  {/* <div className="absolute top-3 left-3 bg-red-500 text-white px-3 py-1.5 rounded flex items-center gap-2">
-                    <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
-                    {videoUrl ? "REC" : "IMAGE"}
-                  </div> */}
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-4">
                     <div className="flex items-center justify-between text-white text-sm">
                       <span className="flex items-center gap-2">
