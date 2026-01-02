@@ -8,7 +8,7 @@ import {
   Users,
   Trash2,
 } from "lucide-react";
-import { Button } from "../ui/button";
+import { Button } from "../ui/button"; // Используем только для стрелки назад
 import {
   Card,
   CardContent,
@@ -80,8 +80,8 @@ export default function IncidentDetails({
 }: IncidentDetailsProps) {
   const { user } = useAuth();
 
-  // Жесткая проверка. Если user.role "admin", переменная будет true.
-  const isAdmin = user?.role === "admin";
+  // Простая и надежная проверка
+  const isAdmin = (user?.role || "").toLowerCase() === "admin";
 
   const [event, setEvent] = useState<EventItem | null>(null);
   const [loading, setLoading] = useState(true);
@@ -129,7 +129,11 @@ export default function IncidentDetails({
 
   async function handleDelete() {
     if (!isAdmin) return;
-    if (!window.confirm("Удалить эту запись безвозвратно?")) return;
+    if (
+      !window.confirm("Вы уверены, что хотите удалить эту запись безвозвратно?")
+    )
+      return;
+
     try {
       await deleteEvent(incidentId);
       onBack();
@@ -138,45 +142,34 @@ export default function IncidentDetails({
     }
   }
 
-  // Обновление статуса
-  async function handleUpdateStatus() {
-    /* скрыто */
-  }
-
   const headerRight = useMemo(() => <StatusBadge status={status} />, [status]);
 
   return (
     <div className="space-y-6">
-      {/* --- Header --- */}
-      <div className="flex items-center justify-between gap-4">
-        {/* ЛЕВАЯ ЧАСТЬ: Кнопка назад + Тексты */}
-        <div className="flex items-center gap-4 flex-1">
-          <Button variant="ghost" size="icon" onClick={onBack}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h2 className="text-slate-900 mb-1 font-semibold text-lg">
-              Детали инцидента #{incidentId.slice(0, 8)}...
-            </h2>
-            <p className="text-slate-600 text-sm">{description}</p>
-          </div>
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="icon" onClick={onBack}>
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <div className="flex-1">
+          <h2 className="text-slate-900 mb-1 font-semibold text-lg">
+            Детали инцидента #{incidentId}
+          </h2>
+          <p className="text-slate-600 text-sm">{description}</p>
         </div>
 
-        {/* ПРАВАЯ ЧАСТЬ: Кнопки */}
-        <div className="flex items-center gap-3">
-          {/* 🛑 ЯВНАЯ КНОПКА УДАЛЕНИЯ (Без условий loading/error, чтобы видеть всегда) */}
-          {isAdmin ? (
-            <button
-              onClick={handleDelete}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors font-medium text-sm"
-            >
-              <Trash2 className="h-4 w-4" />
-              Удалить
-            </button>
-          ) : null}
+        {isAdmin && (
+          <button
+            onClick={handleDelete}
+            style={{ color: "red" }}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white transition-colors bg-red-600 rounded-md hover:bg-red-700 shadow-sm"
+          >
+            <Trash2 className="h-4 w-4" />
+            Удалить
+          </button>
+        )}
 
-          {headerRight}
-        </div>
+        {headerRight}
       </div>
 
       {loadError && (
@@ -197,7 +190,6 @@ export default function IncidentDetails({
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {(videoUrl || imageUrl) && (
             <Card>
@@ -228,7 +220,6 @@ export default function IncidentDetails({
           )}
         </div>
 
-        {/* Sidebar */}
         <div className="space-y-6">
           <Card>
             <CardHeader>
@@ -242,7 +233,9 @@ export default function IncidentDetails({
                   <div className="text-slate-900">{date}</div>
                 </div>
               </div>
+
               <Separator />
+
               <div className="flex items-center gap-3">
                 <Clock className="h-5 w-5 text-slate-400" />
                 <div>
@@ -250,11 +243,15 @@ export default function IncidentDetails({
                   <div className="text-slate-900">{time}</div>
                 </div>
               </div>
+
               <Separator />
+
               <div className="flex items-center gap-3">
                 <SourcePill source={source} />
               </div>
+
               <Separator />
+
               <div className="flex items-center gap-3">
                 <Camera className="h-5 w-5 text-slate-400" />
                 <div>
@@ -264,7 +261,9 @@ export default function IncidentDetails({
                   </div>
                 </div>
               </div>
+
               <Separator />
+
               <div className="flex items-start gap-3">
                 <div className="w-5 h-5 flex items-center justify-center">
                   🎙️
