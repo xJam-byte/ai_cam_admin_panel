@@ -9,7 +9,8 @@ export type EventItem = {
   videoUrl?: string | null;
   score?: number | null;
   meta?: Record<string, any> | null;
-  camera?: { name?: string; schoolId?: string } | null;
+  // опционально: сервер может расширить
+  camera?: { name?: string } | null;
 };
 
 export type ListEventsParams = {
@@ -23,7 +24,7 @@ export type ListEventsParams = {
 };
 
 export async function listEvents(
-  p: ListEventsParams = {}
+  p: ListEventsParams = {},
 ): Promise<EventItem[]> {
   const sp = new URLSearchParams();
   if (p.camera_id) sp.set("camera_id", p.camera_id);
@@ -36,6 +37,7 @@ export async function listEvents(
   const q = sp.toString();
   return httpGet<EventItem[]>(`/events${q ? `?${q}` : ""}`);
 }
-export async function deleteEvent(id: string): Promise<void> {
+
+export function deleteEvent(id: string) {
   return httpDelete(`/events/${id}`);
 }

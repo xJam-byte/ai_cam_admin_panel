@@ -51,7 +51,6 @@ function NavigationMenu({ onNavigate }: { onNavigate?: () => void }) {
           Инциденты
         </Button>
       </NavLink>
-
     </nav>
   );
 }
@@ -148,9 +147,7 @@ function IncidentDetailsRoute() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   if (!id) return null;
-  return (
-    <IncidentDetails incidentId={id} onBack={() => navigate("/incidents")} />
-  );
+  return <IncidentDetails incidentId={id} onBack={() => navigate(-1)} />;
 }
 
 export default function App() {

@@ -1,12 +1,14 @@
 // src/components/pages/IncidentsPage.tsx
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
+  Plus,
   Filter,
   Search,
   Sparkles,
   User,
   ChevronRight,
-  Trash2, // Иконка удаления
+  FilterX,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
@@ -33,49 +35,29 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
   DialogFooter,
 } from "../ui/dialog";
 import { Label } from "../ui/label";
+// import { Textarea } from "../ui/textarea";
 
 import {
   listEvents,
-  deleteEvent, // Импорт функции удаления
   type EventItem,
   type ListEventsParams,
 } from "../../lib/events";
 import { httpGet, httpPost } from "../../lib/http";
-import { useAuth } from "../../providers/AuthProvider"; // Импорт Auth
+import { useAuth } from "../../providers/AuthProvider";
+import { getSchools, type School } from "../../lib/api";
 
 type TimePeriod = "day" | "week" | "month";
 
 interface IncidentsPageProps {
   onViewDetails: (id: string) => void;
-  // schoolId из пропсов можно оставить, но приоритет будет у Auth
+  schoolId?: string;
 }
 
-/* ------------------ helpers + labels ------------------ */
-
-const EVENT_TYPE_LABELS: Record<string, string> = {
-  person: "Обнаружен человек",
-  crowd: "Скопление людей",
-  zone_violation: "Нарушение зоны",
-  fight_1v1: "Драка 1-на-1",
-  fight_group: "Массовая драка",
-  accident: "Несчастный случай",
-  scream: "Крик",
-  profanity: "Нецензурная лексика",
-  SOS: "Сигнал SOS",
-  profanity_scream: "Крик + нецензурная лексика",
-  abuse: "Оскорбления",
-  other: "Другое",
-};
-
-const EVENT_TYPE_OPTIONS: { value: string; label: string }[] = [
-  { value: "profanity", label: EVENT_TYPE_LABELS.profanity },
-  { value: "SOS", label: EVENT_TYPE_LABELS.SOS },
-  { value: "abuse", label: EVENT_TYPE_LABELS.abuse },
-  { value: "other", label: EVENT_TYPE_LABELS.other },
-];
+/* --- helpers --- */
 
 function toDate(val: string | number): Date | null {
   try {
@@ -123,29 +105,76 @@ function getSourceIcon(source?: string) {
   );
 }
 
-function getTypeLabel(type?: string) {
-  if (!type) return "—";
-  return EVENT_TYPE_LABELS[type] || type.toUpperCase();
-}
-
-/* ------------------ component ------------------ */
-
-export default function IncidentsPage({ onViewDetails }: IncidentsPageProps) {
-  const { user } = useAuth(); // Получаем пользователя
-  const isAdmin = user?.role === "admin";
-  // Если админ - undefined (видит всё), иначе ID школы юзера
-  const effectiveSchoolId = isAdmin ? undefined : user?.schoolId;
-
+export default function IncidentsPage({
+  onViewDetails,
+  schoolId,
+}: IncidentsPageProps) {
   // filters
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [sourceFilter, setSourceFilter] = useState<string>("all");
-  const [typeFilter, setTypeFilter] = useState<string>("all");
-  const [searchQuery, setSearchQuery] = useState("");
+  const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const statusFilter = searchParams.get("status") || "all";
+  const sourceFilter = searchParams.get("source") || "all";
+  const typeFilter = searchParams.get("type") || "all";
+
+  // Local state for search input to avoid lag, synced via effect
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
+
+  // school filter (admin only)
+  const [schools, setSchools] = useState<School[]>([]);
+  const selectedSchoolId = searchParams.get("schoolId") || "all";
 
   // period + paging
-  const [period, setPeriod] = useState<TimePeriod>("day");
-  const [limit, setLimit] = useState(50);
-  const [offset, setOffset] = useState(0);
+  const period = (searchParams.get("period") as TimePeriod) || "day";
+  const limit = Number(searchParams.get("limit")) || 50;
+  const offset = Number(searchParams.get("offset")) || 0;
+
+  // Setters wrappers to update URL
+  const updateParam = (key: string, val: string, resetPage = true) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (val === "all" && key !== "q") next.delete(key);
+      else if (!val) next.delete(key);
+      else next.set(key, val);
+
+      if (resetPage) next.delete("offset");
+      return next;
+    });
+  };
+
+  const setStatusFilter = (v: string) => updateParam("status", v, true);
+  const setSourceFilter = (v: string) => updateParam("source", v, true);
+  const setTypeFilter = (v: string) => updateParam("type", v, true);
+  const setSelectedSchoolId = (v: string) => updateParam("schoolId", v, true);
+  const setPeriod = (v: TimePeriod) => updateParam("period", v, true);
+  const setLimit = (v: number) => updateParam("limit", String(v), true);
+  const setOffset = (v: number) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (v === 0) next.delete("offset");
+      else next.set("offset", String(v));
+      return next;
+    });
+  };
+
+  // Sync searchQuery to URL with debounce
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setSearchParams((prev) => {
+        const currentQ = prev.get("q") || "";
+        if (currentQ === searchQuery) return prev; // No change, don't reset offset or spam history
+
+        const next = new URLSearchParams(prev);
+        if (searchQuery) next.set("q", searchQuery);
+        else next.delete("q");
+
+        // Reset offset on new search
+        next.delete("offset");
+        return next;
+      });
+    }, 500);
+    return () => clearTimeout(t);
+  }, [searchQuery, setSearchParams]);
 
   // data
   const [loading, setLoading] = useState(false);
@@ -160,7 +189,6 @@ export default function IncidentsPage({ onViewDetails }: IncidentsPageProps) {
   const [manualCameraId, setManualCameraId] = useState<string>("");
   const [cameras, setCameras] = useState<{ id: string; name: string }[]>([]);
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
 
   // period range -> from/to ISO
   const periodRange = useMemo(() => {
@@ -176,6 +204,7 @@ export default function IncidentsPage({ onViewDetails }: IncidentsPageProps) {
   useEffect(() => {
     (async () => {
       try {
+        // подставь реальный роут если иной
         const list = await httpGet<{ id: string; name: string }[]>("/cameras");
         setCameras(list || []);
       } catch {
@@ -183,6 +212,15 @@ export default function IncidentsPage({ onViewDetails }: IncidentsPageProps) {
       }
     })();
   }, []);
+
+  // load schools if admin
+  useEffect(() => {
+    if (user?.role === "admin") {
+      getSchools()
+        .then((res) => setSchools(res || []))
+        .catch(() => {});
+    }
+  }, [user?.role]);
 
   // fetch events
   const fetchEvents = async () => {
@@ -194,8 +232,18 @@ export default function IncidentsPage({ onViewDetails }: IncidentsPageProps) {
         offset,
         from: periodRange.from,
         to: periodRange.to,
-        school_id: effectiveSchoolId, // Фильтр по школе
       };
+
+      // School filter logic
+      if (schoolId) {
+        params.school_id = schoolId;
+      } else if (user?.role === "admin") {
+        if (selectedSchoolId !== "all") {
+          params.school_id = selectedSchoolId;
+        }
+      } else if (user?.schoolId) {
+        params.school_id = user.schoolId;
+      }
 
       if (typeFilter !== "all") params.type = typeFilter;
 
@@ -208,10 +256,14 @@ export default function IncidentsPage({ onViewDetails }: IncidentsPageProps) {
     }
   };
 
-  // refresh on deps change
-  useEffect(() => {
-    setOffset(0);
-  }, [period, typeFilter, statusFilter, sourceFilter, searchQuery]);
+  const resetFilters = () => {
+    setSearchQuery("");
+    setSearchParams((prev) => {
+      const next = new URLSearchParams();
+      if (prev.has("limit")) next.set("limit", prev.get("limit")!);
+      return next;
+    });
+  };
 
   useEffect(() => {
     fetchEvents();
@@ -222,65 +274,42 @@ export default function IncidentsPage({ onViewDetails }: IncidentsPageProps) {
     typeFilter,
     limit,
     offset,
-    effectiveSchoolId,
+    schoolId,
+    selectedSchoolId,
   ]);
 
-  // Функция удаления (только для админа)
-  const handleDeleteItem = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    if (!isAdmin) return;
-    if (!window.confirm("Вы уверены, что хотите удалить эту запись?")) return;
-
-    try {
-      await deleteEvent(id);
-      // Обновляем список локально
-      setRows((prev) => prev.filter((item) => item.id !== id));
-    } catch (err) {
-      alert("Ошибка при удалении");
-    }
-  };
-
-  // client-side refine: status/source from meta + search (memoized)
+  // client-side refine: status/source from meta + search
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-
-    if (statusFilter === "all" && sourceFilter === "all" && !q) {
-      return rows;
-    }
-
     return rows.filter((r) => {
-      const meta: Record<string, any> = r.meta || {};
-      const source = meta.source || "ai";
-      const status = meta.status || "new";
+      const meta = (r.meta as any) || {};
+      const source = (meta.source as string) || "ai";
+      const status = (meta.status as string) || "new";
+      const description =
+        (meta.description as string) || (meta.text as string) || r.type;
+      const participants = (meta.participants as string) || "";
+      const cameraName = r.camera?.name || "";
 
-      if (statusFilter !== "all" && status !== statusFilter) return false;
-      if (sourceFilter !== "all" && source !== sourceFilter) return false;
+      const okStatus = statusFilter === "all" || status === statusFilter;
+      const okSource = sourceFilter === "all" || source === sourceFilter;
+      const okSearch =
+        !q ||
+        description.toLowerCase().includes(q) ||
+        participants.toLowerCase().includes(q) ||
+        cameraName.toLowerCase().includes(q);
 
-      if (q) {
-        const description =
-          meta.description || meta.text || getTypeLabel(r.type);
-        const participants = meta.participants || "";
-        const cameraName = r.camera?.name || "";
-        const typeLabel = getTypeLabel(r.type);
-
-        const searchableText =
-          `${description} ${participants} ${cameraName} ${typeLabel}`.toLowerCase();
-
-        if (!searchableText.includes(q)) return false;
-      }
-
-      return true;
+      return okStatus && okSource && okSearch;
     });
   }, [rows, statusFilter, sourceFilter, searchQuery]);
 
   async function handleSaveManual() {
     if (!manualCameraId) return;
     setSaving(true);
-    setSaveError(null);
     try {
       await httpPost("/events/ingest", {
         camera_id: manualCameraId,
         type: manualType,
+        // timestamp НЕ отправляем — БД ставит now()
         meta: {
           source: "manual",
           status: "new",
@@ -293,10 +322,9 @@ export default function IncidentsPage({ onViewDetails }: IncidentsPageProps) {
       setManualParticipants("");
       setManualType("other");
       setManualCameraId("");
-      setSaveError(null);
       await fetchEvents();
     } catch (e: any) {
-      setSaveError(e?.message || "Не удалось сохранить");
+      alert(e?.message || "Не удалось сохранить");
     } finally {
       setSaving(false);
     }
@@ -310,9 +338,7 @@ export default function IncidentsPage({ onViewDetails }: IncidentsPageProps) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-slate-900 mb-1">Журнал инцидентов</h2>
-          <p className="text-slate-600">
-            {isAdmin ? "Полный доступ (Администратор)" : "Мониторинг школы"}
-          </p>
+          <p className="text-slate-600">Управление и мониторинг всех событий</p>
         </div>
 
         <div className="flex gap-2">
@@ -331,13 +357,12 @@ export default function IncidentsPage({ onViewDetails }: IncidentsPageProps) {
           </Select>
 
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            {/* <DialogTrigger asChild>
+            <DialogTrigger asChild>
               <Button className="gap-2">
                 <Plus className="h-4 w-4" />
                 Добавить вручную
               </Button>
-            </DialogTrigger> */}
-
+            </DialogTrigger>
             <DialogContent className="sm:max-w-[520px]">
               <DialogHeader>
                 <DialogTitle>Новый инцидент</DialogTitle>
@@ -345,7 +370,6 @@ export default function IncidentsPage({ onViewDetails }: IncidentsPageProps) {
                   Заполните информацию о вручную зафиксированном событии
                 </DialogDescription>
               </DialogHeader>
-
               <div className="space-y-4 py-2">
                 <div className="space-y-2">
                   <Label>Камера</Label>
@@ -373,11 +397,22 @@ export default function IncidentsPage({ onViewDetails }: IncidentsPageProps) {
                       <SelectValue placeholder="Тип" />
                     </SelectTrigger>
                     <SelectContent>
-                      {EVENT_TYPE_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="other">Другое</SelectItem>
+                      <SelectItem value="scream">Крик</SelectItem>
+                      <SelectItem value="profanity">
+                        Нецензурная лексика
+                      </SelectItem>
+                      <SelectItem value="abuse">Оскорбления</SelectItem>
+                      <SelectItem value="fight_1v1">Драка 1-на-1</SelectItem>
+                      <SelectItem value="fight_group">
+                        Массовая драка
+                      </SelectItem>
+                      <SelectItem value="zone_violation">
+                        Нарушение зоны
+                      </SelectItem>
+                      <SelectItem value="accident">
+                        Несчастный случай
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -391,7 +426,6 @@ export default function IncidentsPage({ onViewDetails }: IncidentsPageProps) {
                     onChange={(e) => setManualDescription(e.target.value)}
                   />
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="participants">Участники</Label>
                   <Input
@@ -402,13 +436,6 @@ export default function IncidentsPage({ onViewDetails }: IncidentsPageProps) {
                   />
                 </div>
               </div>
-
-              {saveError && (
-                <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                  {saveError}
-                </div>
-              )}
-
               <DialogFooter>
                 <Button
                   variant="outline"
@@ -442,8 +469,27 @@ export default function IncidentsPage({ onViewDetails }: IncidentsPageProps) {
               />
             </div>
 
-            <div className="flex gap-2">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <div className="flex gap-2 flex-wrap">
+              {user?.role === "admin" && !schoolId && (
+                <Select
+                  value={selectedSchoolId}
+                  onValueChange={setSelectedSchoolId}
+                >
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Школа" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Все школы</SelectItem>
+                    {schools.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+
+              {/* <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-[160px]">
                   <div className="flex items-center gap-2">
                     <Filter className="h-4 w-4" />
@@ -456,8 +502,8 @@ export default function IncidentsPage({ onViewDetails }: IncidentsPageProps) {
                   <SelectItem value="in-progress">В работе</SelectItem>
                   <SelectItem value="resolved">Решен</SelectItem>
                 </SelectContent>
-              </Select>
-
+              </Select> */}
+              {/* 
               <Select value={sourceFilter} onValueChange={setSourceFilter}>
                 <SelectTrigger className="w-[140px]">
                   <SelectValue placeholder="Источник" />
@@ -467,21 +513,39 @@ export default function IncidentsPage({ onViewDetails }: IncidentsPageProps) {
                   <SelectItem value="ai">ИИ-камера</SelectItem>
                   <SelectItem value="manual">Вручную</SelectItem>
                 </SelectContent>
-              </Select>
+              </Select> */}
 
               <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-[200px]">
+                <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Тип события" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Все типы</SelectItem>
-                  {EVENT_TYPE_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="scream">Крик</SelectItem>
+                  <SelectItem value="profanity">Нецензурная лексика</SelectItem>
+                  <SelectItem value="abuse">Оскорбления</SelectItem>
+                  <SelectItem value="fight_1v1">Драка 1-на-1</SelectItem>
+                  <SelectItem value="fight_group">Массовая драка</SelectItem>
+                  <SelectItem value="zone_violation">Нарушение зоны</SelectItem>
+                  <SelectItem value="accident">Несчастный случай</SelectItem>
+                  <SelectItem value="other">Другое</SelectItem>
                 </SelectContent>
               </Select>
+
+              {(statusFilter !== "all" ||
+                sourceFilter !== "all" ||
+                typeFilter !== "all" ||
+                searchQuery ||
+                selectedSchoolId !== "all") && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={resetFilters}
+                  title="Сбросить фильтры"
+                >
+                  <FilterX className="h-4 w-4 text-slate-500" />
+                </Button>
+              )}
             </div>
           </div>
 
@@ -542,7 +606,7 @@ export default function IncidentsPage({ onViewDetails }: IncidentsPageProps) {
                 <TableHead>Источник</TableHead>
                 <TableHead>Описание</TableHead>
                 <TableHead>Статус</TableHead>
-                <TableHead className="w-[140px]">Действие</TableHead>
+                <TableHead className="w-[100px]">Действие</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -564,10 +628,8 @@ export default function IncidentsPage({ onViewDetails }: IncidentsPageProps) {
                   const meta = (e.meta as any) || {};
                   const source = meta.source || "ai";
                   const status = meta.status || "new";
-
                   const description =
-                    meta.description || meta.text || getTypeLabel(e.type);
-
+                    meta.description || meta.text || e.type.toUpperCase();
                   return (
                     <TableRow
                       key={e.id}
@@ -589,30 +651,16 @@ export default function IncidentsPage({ onViewDetails }: IncidentsPageProps) {
                       </TableCell>
                       <TableCell>{getStatusBadge(status)}</TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(ev: any) => {
-                              ev.stopPropagation();
-                              onViewDetails(e.id);
-                            }}
-                          >
-                            Подробнее
-                          </Button>
-
-                          {/* КНОПКА УДАЛЕНИЯ ТОЛЬКО ДЛЯ АДМИНА */}
-                          {isAdmin && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                              onClick={(ev: any) => handleDeleteItem(ev, e.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(ev: any) => {
+                            ev.stopPropagation();
+                            onViewDetails(e.id);
+                          }}
+                        >
+                          Подробнее
+                        </Button>
                       </TableCell>
                     </TableRow>
                   );
@@ -643,12 +691,9 @@ export default function IncidentsPage({ onViewDetails }: IncidentsPageProps) {
             const meta = (e.meta as any) || {};
             const source = meta.source || "ai";
             const status = meta.status || "new";
-
             const description =
-              meta.description || meta.text || getTypeLabel(e.type);
-
+              meta.description || meta.text || e.type.toUpperCase();
             const participants = meta.participants || "";
-
             return (
               <Card
                 key={e.id}
@@ -665,32 +710,17 @@ export default function IncidentsPage({ onViewDetails }: IncidentsPageProps) {
                     </div>
                     <ChevronRight className="h-5 w-5 text-slate-400 flex-shrink-0" />
                   </div>
-
                   <div className="flex items-center gap-2 mb-2">
                     {getSourceIcon(source)}
                   </div>
-
                   {participants && (
                     <div className="text-slate-600 mb-3">{participants}</div>
                   )}
-
-                  <div className="flex items-center justify-between border-t pt-3 mt-2">
+                  <div className="flex items-center justify-between">
                     {getStatusBadge(status)}
-                    <div className="flex gap-2">
-                      {isAdmin && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-600 h-8"
-                          onClick={(ev: any) => handleDeleteItem(ev, e.id)}
-                        >
-                          Удалить
-                        </Button>
-                      )}
-                      <Button variant="ghost" size="sm" className="h-8">
-                        Подробнее
-                      </Button>
-                    </div>
+                    <Button variant="ghost" size="sm">
+                      Подробнее
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
