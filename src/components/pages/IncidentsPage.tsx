@@ -9,7 +9,11 @@ import {
   User,
   ChevronRight,
   FilterX,
+  Calendar as CalendarIcon,
 } from "lucide-react";
+import { DateRange } from "react-day-picker";
+import { Calendar } from "../ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { Badge } from "../ui/badge";
@@ -39,7 +43,6 @@ import {
   DialogFooter,
 } from "../ui/dialog";
 import { Label } from "../ui/label";
-// import { Textarea } from "../ui/textarea";
 
 import {
   listEvents,
@@ -49,8 +52,9 @@ import {
 import { httpGet, httpPost } from "../../lib/http";
 import { useAuth } from "../../providers/AuthProvider";
 import { getSchools, type School } from "../../lib/api";
+import { cn } from "../ui/utils";
 
-type TimePeriod = "day" | "week" | "month";
+type TimePeriod = "day" | "week" | "month" | "custom";
 
 interface IncidentsPageProps {
   onViewDetails: (id: string) => void;
@@ -71,35 +75,35 @@ function toDate(val: string | number): Date | null {
 function formatDateTime(ts: string | number) {
   const d = toDate(ts);
   if (!d || Number.isNaN(d.getTime())) return { date: "-", time: "-" };
-  const date = d.toLocaleDateString();
-  const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const date = d.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
+  const time = d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
   return { date, time };
 }
 
 function getStatusBadge(status?: string) {
   switch (status) {
     case "new":
-      return <Badge className="bg-red-500 hover:bg-red-600">Новый</Badge>;
+      return <Badge className="bg-rose-500/10 text-rose-400 border-rose-500/20 shadow-inner px-2 py-0.5 uppercase text-[10px] tracking-wider font-bold hover:bg-rose-500/20">Новый</Badge>;
     case "in-progress":
       return (
-        <Badge className="bg-amber-500 hover:bg-amber-600">В работе</Badge>
+        <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/20 shadow-inner px-2 py-0.5 uppercase text-[10px] tracking-wider font-bold hover:bg-amber-500/20">В работе</Badge>
       );
     case "resolved":
-      return <Badge className="bg-green-500 hover:bg-green-600">Решен</Badge>;
+      return <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-inner px-2 py-0.5 uppercase text-[10px] tracking-wider font-bold hover:bg-emerald-500/20">Решен</Badge>;
     default:
-      return <Badge variant="outline">—</Badge>;
+      return <Badge variant="outline" className="border-slate-700 text-slate-400 px-2 py-0.5 uppercase text-[10px] tracking-wider font-bold">—</Badge>;
   }
 }
 
 function getSourceIcon(source?: string) {
   return source === "manual" ? (
-    <div className="flex items-center gap-1.5 text-slate-600">
-      <User className="h-4 w-4" />
+    <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-800/50 border border-slate-700/50 text-slate-300 text-xs font-semibold shadow-inner">
+      <User className="h-3.5 w-3.5 text-slate-400" />
       <span>Вручную</span>
     </div>
   ) : (
-    <div className="flex items-center gap-1.5 text-purple-600">
-      <Sparkles className="h-4 w-4" />
+    <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold shadow-inner">
+      <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
       <span>ИИ-камера</span>
     </div>
   );
@@ -109,7 +113,6 @@ export default function IncidentsPage({
   onViewDetails,
   schoolId,
 }: IncidentsPageProps) {
-  // filters
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -117,19 +120,39 @@ export default function IncidentsPage({
   const sourceFilter = searchParams.get("source") || "all";
   const typeFilter = searchParams.get("type") || "all";
 
-  // Local state for search input to avoid lag, synced via effect
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
 
-  // school filter (admin only)
   const [schools, setSchools] = useState<School[]>([]);
   const selectedSchoolId = searchParams.get("schoolId") || "all";
 
-  // period + paging
-  const period = (searchParams.get("period") as TimePeriod) || "day";
+  const fromParam = searchParams.get("from");
+  const toParam = searchParams.get("to");
+  const period = (searchParams.get("period") || "day") as TimePeriod;
   const limit = Number(searchParams.get("limit")) || 50;
   const offset = Number(searchParams.get("offset")) || 0;
 
-  // Setters wrappers to update URL
+  const dateRange = useMemo(() => {
+    let fromDate: Date;
+    let toDate: Date = new Date();
+
+    if (fromParam && toParam) {
+      fromDate = new Date(fromParam);
+      toDate = new Date(toParam);
+    } else {
+      fromDate = new Date();
+      if (period === "day") {
+        fromDate.setHours(0, 0, 0, 0);
+      } else if (period === "week") {
+        fromDate.setDate(fromDate.getDate() - 7);
+        fromDate.setHours(0, 0, 0, 0);
+      } else {
+        fromDate.setDate(fromDate.getDate() - 30);
+        fromDate.setHours(0, 0, 0, 0);
+      }
+    }
+    return { from: fromDate, to: toDate };
+  }, [fromParam, toParam, period]);
+
   const updateParam = (key: string, val: string, resetPage = true) => {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
@@ -142,11 +165,40 @@ export default function IncidentsPage({
     });
   };
 
-  const setStatusFilter = (v: string) => updateParam("status", v, true);
-  const setSourceFilter = (v: string) => updateParam("source", v, true);
   const setTypeFilter = (v: string) => updateParam("type", v, true);
   const setSelectedSchoolId = (v: string) => updateParam("schoolId", v, true);
-  const setPeriod = (v: TimePeriod) => updateParam("period", v, true);
+
+  const setPeriod = (v: TimePeriod) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("period", v);
+      next.delete("from");
+      next.delete("to");
+      next.delete("offset");
+      return next;
+    });
+  };
+
+  const handleSelectRange = (range: DateRange | undefined) => {
+    if (!range) return;
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (range.from) {
+        next.set("from", range.from.toISOString().split("T")[0]);
+        next.set("period", "custom");
+      } else {
+        next.delete("from");
+      }
+      if (range.to) {
+        next.set("to", range.to.toISOString().split("T")[0]);
+      } else {
+        next.delete("to");
+      }
+      next.delete("offset");
+      return next;
+    });
+  };
+
   const setLimit = (v: number) => updateParam("limit", String(v), true);
   const setOffset = (v: number) => {
     setSearchParams((prev) => {
@@ -157,18 +209,16 @@ export default function IncidentsPage({
     });
   };
 
-  // Sync searchQuery to URL with debounce
   useEffect(() => {
     const t = setTimeout(() => {
       setSearchParams((prev) => {
         const currentQ = prev.get("q") || "";
-        if (currentQ === searchQuery) return prev; // No change, don't reset offset or spam history
+        if (currentQ === searchQuery) return prev;
 
         const next = new URLSearchParams(prev);
         if (searchQuery) next.set("q", searchQuery);
         else next.delete("q");
 
-        // Reset offset on new search
         next.delete("offset");
         return next;
       });
@@ -176,12 +226,10 @@ export default function IncidentsPage({
     return () => clearTimeout(t);
   }, [searchQuery, setSearchParams]);
 
-  // data
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<EventItem[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  // dialog (manual add)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [manualDescription, setManualDescription] = useState("");
   const [manualParticipants, setManualParticipants] = useState("");
@@ -190,21 +238,17 @@ export default function IncidentsPage({
   const [cameras, setCameras] = useState<{ id: string; name: string }[]>([]);
   const [saving, setSaving] = useState(false);
 
-  // period range -> from/to ISO
   const periodRange = useMemo(() => {
-    const to = new Date();
-    const from = new Date(to);
-    if (period === "day") from.setDate(to.getDate() - 1);
-    else if (period === "week") from.setDate(to.getDate() - 7);
-    else from.setDate(to.getDate() - 30);
-    return { from: from.toISOString(), to: to.toISOString() };
-  }, [period]);
+    const fromISO = new Date(dateRange.from);
+    fromISO.setHours(0, 0, 0, 0);
+    const toISO = new Date(dateRange.to);
+    toISO.setHours(23, 59, 59, 999);
+    return { from: fromISO.toISOString(), to: toISO.toISOString() };
+  }, [dateRange]);
 
-  // load cameras (для ручного добавления)
   useEffect(() => {
     (async () => {
       try {
-        // подставь реальный роут если иной
         const list = await httpGet<{ id: string; name: string }[]>("/cameras");
         setCameras(list || []);
       } catch {
@@ -213,7 +257,6 @@ export default function IncidentsPage({
     })();
   }, []);
 
-  // load schools if admin
   useEffect(() => {
     if (user?.role === "admin") {
       getSchools()
@@ -222,7 +265,6 @@ export default function IncidentsPage({
     }
   }, [user?.role]);
 
-  // fetch events
   const fetchEvents = async () => {
     setLoading(true);
     setError(null);
@@ -234,7 +276,6 @@ export default function IncidentsPage({
         to: periodRange.to,
       };
 
-      // School filter logic
       if (schoolId) {
         params.school_id = schoolId;
       } else if (user?.role === "admin") {
@@ -267,7 +308,6 @@ export default function IncidentsPage({
 
   useEffect(() => {
     fetchEvents();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     periodRange.from,
     periodRange.to,
@@ -278,7 +318,6 @@ export default function IncidentsPage({
     selectedSchoolId,
   ]);
 
-  // client-side refine: status/source from meta + search
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return rows.filter((r) => {
@@ -309,7 +348,6 @@ export default function IncidentsPage({
       await httpPost("/events/ingest", {
         camera_id: manualCameraId,
         type: manualType,
-        // timestamp НЕ отправляем — БД ставит now()
         meta: {
           source: "manual",
           status: "new",
@@ -333,56 +371,119 @@ export default function IncidentsPage({
   const totalCount = filtered.length;
 
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-6 animate-in fade-in duration-500 text-slate-100">
+      {/* Шапка страницы */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 bg-slate-900/50 backdrop-blur-xl p-6 rounded-3xl border border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
         <div>
-          <h2 className="text-slate-900 mb-1">Журнал инцидентов</h2>
-          <p className="text-slate-600">Управление и мониторинг всех событий</p>
+          <h2 className="text-3xl font-extrabold tracking-tight text-white drop-shadow-sm">Журнал инцидентов</h2>
+          <p className="text-slate-400 mt-1 text-sm font-medium">Управление и мониторинг всех событий безопасности</p>
         </div>
 
-        <div className="flex gap-2">
-          <Select
-            value={period}
-            onValueChange={(v: any) => setPeriod(v as TimePeriod)}
-          >
-            <SelectTrigger className="w-[160px]">
-              <SelectValue placeholder="Период" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="day">Сегодня</SelectItem>
-              <SelectItem value="week">7 дней</SelectItem>
-              <SelectItem value="month">30 дней</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Быстрые периоды */}
+          <div className="bg-slate-950/80 p-0.5 rounded-xl flex items-center gap-0.5 border border-slate-800/80 shadow-inner">
+            <Button
+              variant={period === "day" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setPeriod("day")}
+              className={cn(
+                "rounded-lg transition-all font-semibold text-xs h-8 px-3.5",
+                period === "day" ? "bg-indigo-600 text-white shadow-[0_0_15px_-3px_rgba(79,70,229,0.5)]" : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+              )}
+            >
+              Сегодня
+            </Button>
+            <Button
+              variant={period === "week" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setPeriod("week")}
+              className={cn(
+                "rounded-lg transition-all font-semibold text-xs h-8 px-3.5",
+                period === "week" ? "bg-indigo-600 text-white shadow-[0_0_15px_-3px_rgba(79,70,229,0.5)]" : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+              )}
+            >
+              Неделя
+            </Button>
+            <Button
+              variant={period === "month" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setPeriod("month")}
+              className={cn(
+                "rounded-lg transition-all font-semibold text-xs h-8 px-3.5",
+                period === "month" ? "bg-indigo-600 text-white shadow-[0_0_15px_-3px_rgba(79,70,229,0.5)]" : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+              )}
+            >
+              Месяц
+            </Button>
+          </div>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={period === "custom" ? "default" : "outline"}
+                size="sm"
+                className={cn(
+                  "h-9 px-4 gap-2 font-semibold text-xs rounded-xl shadow-lg transition-all",
+                  period === "custom" 
+                    ? "bg-indigo-600 text-white shadow-indigo-500/25 border-transparent" 
+                    : "bg-slate-900/50 text-slate-300 border-slate-800 hover:bg-slate-800 hover:text-white hover:border-slate-700"
+                )}
+              >
+                <CalendarIcon className={cn("h-4 w-4", period === "custom" ? "text-indigo-200" : "text-indigo-400")} />
+                {(() => {
+                  const options: Intl.DateTimeFormatOptions = {
+                    day: "numeric",
+                    month: "short",
+                  };
+                  const from = dateRange.from;
+                  const to = dateRange.to;
+                  if (from.toDateString() === to.toDateString()) {
+                    return from.toLocaleDateString("ru-RU", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    });
+                  }
+                  return `${from.toLocaleDateString("ru-RU", options)} — ${to.toLocaleDateString("ru-RU", options)}`;
+                })()}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0 border-slate-800 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-3xl bg-slate-900" align="end">
+              <Calendar
+                initialFocus
+                mode="range"
+                defaultMonth={dateRange.from}
+                selected={{ from: dateRange.from, to: dateRange.to }}
+                onSelect={handleSelectRange}
+                className="rounded-3xl bg-slate-900 text-slate-100"
+              />
+            </PopoverContent>
+          </Popover>
 
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2">
+              <Button className="gap-2 bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 shadow-md transition-all rounded-xl ml-2">
                 <Plus className="h-4 w-4" />
                 Добавить вручную
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[520px]">
+            <DialogContent className="sm:max-w-[520px] bg-slate-900 border-slate-800 text-slate-100 rounded-3xl shadow-2xl">
               <DialogHeader>
-                <DialogTitle>Новый инцидент</DialogTitle>
-                <DialogDescription>
+                <DialogTitle className="text-xl font-bold">Новый инцидент</DialogTitle>
+                <DialogDescription className="text-slate-400">
                   Заполните информацию о вручную зафиксированном событии
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4 py-2">
+              <div className="space-y-5 py-4">
                 <div className="space-y-2">
-                  <Label>Камера</Label>
-                  <Select
-                    value={manualCameraId}
-                    onValueChange={setManualCameraId}
-                  >
-                    <SelectTrigger>
+                  <Label className="text-slate-300 font-semibold">Камера</Label>
+                  <Select value={manualCameraId} onValueChange={setManualCameraId}>
+                    <SelectTrigger className="bg-slate-950 border-slate-800 text-slate-200 h-11 rounded-xl">
                       <SelectValue placeholder="Выберите камеру" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
                       {cameras.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>
+                        <SelectItem key={c.id} value={c.id} className="focus:bg-slate-800 focus:text-white cursor-pointer">
                           {c.name}
                         </SelectItem>
                       ))}
@@ -391,48 +492,42 @@ export default function IncidentsPage({
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Тип события</Label>
+                  <Label className="text-slate-300 font-semibold">Тип события</Label>
                   <Select value={manualType} onValueChange={setManualType}>
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-slate-950 border-slate-800 text-slate-200 h-11 rounded-xl">
                       <SelectValue placeholder="Тип" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="other">Другое</SelectItem>
-                      <SelectItem value="scream">Крик</SelectItem>
-                      <SelectItem value="profanity">
-                        Нецензурная лексика
-                      </SelectItem>
-                      <SelectItem value="abuse">Оскорбления</SelectItem>
-                      <SelectItem value="fight_1v1">Драка 1-на-1</SelectItem>
-                      <SelectItem value="fight_group">
-                        Массовая драка
-                      </SelectItem>
-                      <SelectItem value="zone_violation">
-                        Нарушение зоны
-                      </SelectItem>
-                      <SelectItem value="accident">
-                        Несчастный случай
-                      </SelectItem>
+                    <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
+                      <SelectItem value="other" className="focus:bg-slate-800">Другое</SelectItem>
+                      <SelectItem value="scream" className="focus:bg-slate-800">Крик</SelectItem>
+                      <SelectItem value="profanity" className="focus:bg-slate-800">Нецензурная лексика</SelectItem>
+                      <SelectItem value="abuse" className="focus:bg-slate-800">Оскорбления</SelectItem>
+                      <SelectItem value="fight_1v1" className="focus:bg-slate-800">Драка 1-на-1</SelectItem>
+                      <SelectItem value="fight_group" className="focus:bg-slate-800">Массовая драка</SelectItem>
+                      <SelectItem value="zone_violation" className="focus:bg-slate-800">Нарушение зоны</SelectItem>
+                      <SelectItem value="accident" className="focus:bg-slate-800">Несчастный случай</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description">Описание</Label>
+                  <Label htmlFor="description" className="text-slate-300 font-semibold">Описание</Label>
                   <Input
                     id="description"
                     placeholder="Кратко о произошедшем"
                     value={manualDescription}
                     onChange={(e) => setManualDescription(e.target.value)}
+                    className="bg-slate-950 border-slate-800 text-slate-200 placeholder:text-slate-600 h-11 rounded-xl"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="participants">Участники</Label>
+                  <Label htmlFor="participants" className="text-slate-300 font-semibold">Участники</Label>
                   <Input
                     id="participants"
                     placeholder="Имена / классы"
                     value={manualParticipants}
                     onChange={(e) => setManualParticipants(e.target.value)}
+                    className="bg-slate-950 border-slate-800 text-slate-200 placeholder:text-slate-600 h-11 rounded-xl"
                   />
                 </div>
               </div>
@@ -440,12 +535,14 @@ export default function IncidentsPage({
                 <Button
                   variant="outline"
                   onClick={() => setIsAddDialogOpen(false)}
+                  className="rounded-xl border-slate-700 bg-transparent text-slate-300 hover:bg-slate-800 hover:text-white"
                 >
                   Отмена
                 </Button>
                 <Button
                   onClick={handleSaveManual}
                   disabled={saving || !manualCameraId}
+                  className="rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold shadow-[0_0_15px_rgba(79,70,229,0.4)]"
                 >
                   {saving ? "Сохранение…" : "Сохранить"}
                 </Button>
@@ -455,33 +552,30 @@ export default function IncidentsPage({
         </div>
       </div>
 
-      {/* Filters and Search */}
-      <Card>
-        <CardContent className="pt-6">
+      {/* Фильтры и Поиск */}
+      <Card className="border border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] bg-slate-900/50 backdrop-blur-xl rounded-3xl overflow-hidden">
+        <CardContent className="p-5">
           <div className="flex flex-col lg:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-indigo-400 drop-shadow-[0_0_8px_rgba(129,140,248,0.5)]" />
               <Input
                 placeholder="Поиск: описание, участники, камера…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-12 h-12 bg-slate-950/60 border-slate-800 text-white placeholder:text-slate-500 rounded-2xl shadow-inner focus-visible:ring-indigo-500/50"
               />
             </div>
 
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-3 flex-wrap items-center">
               {user?.role === "admin" && !schoolId && (
-                <Select
-                  value={selectedSchoolId}
-                  onValueChange={setSelectedSchoolId}
-                >
-                  <SelectTrigger className="w-[200px]">
+                <Select value={selectedSchoolId} onValueChange={setSelectedSchoolId}>
+                  <SelectTrigger className="w-[200px] h-12 bg-slate-950/60 border-slate-800 text-slate-300 rounded-2xl font-medium">
                     <SelectValue placeholder="Школа" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Все школы</SelectItem>
+                  <SelectContent className="bg-slate-900 border-slate-800 text-slate-300 rounded-xl">
+                    <SelectItem value="all" className="focus:bg-slate-800 cursor-pointer">Все школы</SelectItem>
                     {schools.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
+                      <SelectItem key={s.id} value={s.id} className="focus:bg-slate-800 cursor-pointer">
                         {s.name}
                       </SelectItem>
                     ))}
@@ -489,136 +583,112 @@ export default function IncidentsPage({
                 </Select>
               )}
 
-              {/* <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[160px]">
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="w-[200px] h-12 bg-slate-950/60 border-slate-800 text-slate-300 rounded-2xl font-medium">
                   <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4" />
-                    <SelectValue placeholder="Статус" />
+                    <Filter className="h-4 w-4 text-slate-500" />
+                    <SelectValue placeholder="Тип события" />
                   </div>
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Все статусы</SelectItem>
-                  <SelectItem value="new">Новый</SelectItem>
-                  <SelectItem value="in-progress">В работе</SelectItem>
-                  <SelectItem value="resolved">Решен</SelectItem>
-                </SelectContent>
-              </Select> */}
-              {/* 
-              <Select value={sourceFilter} onValueChange={setSourceFilter}>
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="Источник" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Все</SelectItem>
-                  <SelectItem value="ai">ИИ-камера</SelectItem>
-                  <SelectItem value="manual">Вручную</SelectItem>
-                </SelectContent>
-              </Select> */}
-
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Тип события" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Все типы</SelectItem>
-                  <SelectItem value="scream">Крик</SelectItem>
-                  <SelectItem value="profanity">Нецензурная лексика</SelectItem>
-                  <SelectItem value="abuse">Оскорбления</SelectItem>
-                  <SelectItem value="fight_1v1">Драка 1-на-1</SelectItem>
-                  <SelectItem value="fight_group">Массовая драка</SelectItem>
-                  <SelectItem value="zone_violation">Нарушение зоны</SelectItem>
-                  <SelectItem value="accident">Несчастный случай</SelectItem>
-                  <SelectItem value="other">Другое</SelectItem>
+                <SelectContent className="bg-slate-900 border-slate-800 text-slate-300 rounded-xl">
+                  <SelectItem value="all" className="focus:bg-slate-800 cursor-pointer">Все типы</SelectItem>
+                  <SelectItem value="scream" className="focus:bg-slate-800 cursor-pointer">Крик</SelectItem>
+                  <SelectItem value="profanity" className="focus:bg-slate-800 cursor-pointer">Нецензурная лексика</SelectItem>
+                  <SelectItem value="abuse" className="focus:bg-slate-800 cursor-pointer">Оскорбления</SelectItem>
+                  <SelectItem value="fight_1v1" className="focus:bg-slate-800 cursor-pointer">Драка 1-на-1</SelectItem>
+                  <SelectItem value="fight_group" className="focus:bg-slate-800 cursor-pointer">Массовая драка</SelectItem>
+                  <SelectItem value="zone_violation" className="focus:bg-slate-800 cursor-pointer">Нарушение зоны</SelectItem>
+                  <SelectItem value="accident" className="focus:bg-slate-800 cursor-pointer">Несчастный случай</SelectItem>
+                  <SelectItem value="other" className="focus:bg-slate-800 cursor-pointer">Другое</SelectItem>
                 </SelectContent>
               </Select>
 
-              {(statusFilter !== "all" ||
-                sourceFilter !== "all" ||
-                typeFilter !== "all" ||
-                searchQuery ||
-                selectedSchoolId !== "all") && (
+              {(typeFilter !== "all" || searchQuery || selectedSchoolId !== "all") && (
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={resetFilters}
                   title="Сбросить фильтры"
+                  className="h-12 w-12 rounded-2xl bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 border border-rose-500/20 transition-all"
                 >
-                  <FilterX className="h-4 w-4 text-slate-500" />
+                  <FilterX className="h-5 w-5" />
                 </Button>
               )}
-            </div>
-          </div>
-
-          {/* Пагинация/лимит */}
-          <div className="flex gap-3 items-center mt-4">
-            <span className="text-sm text-slate-500">Показывать по:</span>
-            <Select
-              value={String(limit)}
-              onValueChange={(v: any) => setLimit(Number(v))}
-            >
-              <SelectTrigger className="w-[100px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {[25, 50, 100].map((n) => (
-                  <SelectItem key={n} value={String(n)}>
-                    {n}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="ml-auto flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setOffset(Math.max(0, offset - limit))}
-                disabled={offset === 0 || loading}
-              >
-                Назад
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setOffset(offset + limit)}
-                disabled={loading || rows.length < limit}
-              >
-                Далее
-              </Button>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Results count */}
-      <div className="text-slate-600">
-        Найдено инцидентов: <span className="text-slate-900">{totalCount}</span>
-        {error && <span className="text-red-600 ml-3">{error}</span>}
+      {/* Заголовок результатов */}
+      <div className="flex items-center justify-between px-2">
+        <div className="text-slate-400 font-medium text-sm">
+          Найдено инцидентов: <span className="text-white font-bold text-lg ml-1">{totalCount}</span>
+          {error && <span className="text-rose-400 ml-3 bg-rose-500/10 px-2 py-1 rounded-md">{error}</span>}
+        </div>
+        
+        {/* Пагинация */}
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider hidden sm:inline-block">Показывать по:</span>
+          <Select value={String(limit)} onValueChange={(v: any) => setLimit(Number(v))}>
+            <SelectTrigger className="w-[80px] h-9 bg-slate-900 border-slate-800 text-slate-300 rounded-lg text-xs font-bold">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-slate-900 border-slate-800 text-slate-300 min-w-[80px]">
+              {[25, 50, 100].map((n) => (
+                <SelectItem key={n} value={String(n)} className="focus:bg-slate-800 text-xs font-bold cursor-pointer">{n}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="flex gap-1 ml-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setOffset(Math.max(0, offset - limit))}
+              disabled={offset === 0 || loading}
+              className="h-9 px-3 rounded-lg border-slate-700 bg-transparent text-slate-300 hover:bg-slate-800"
+            >
+              Назад
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setOffset(offset + limit)}
+              disabled={loading || rows.length < limit}
+              className="h-9 px-3 rounded-lg border-slate-700 bg-transparent text-slate-300 hover:bg-slate-800"
+            >
+              Далее
+            </Button>
+          </div>
+        </div>
       </div>
 
-      {/* Incidents Table - Desktop */}
-      <Card className="hidden lg:block">
+      {/* Таблица инцидентов (Desktop) */}
+      <Card className="hidden lg:block border border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] bg-slate-900/50 backdrop-blur-xl rounded-3xl overflow-hidden">
         <CardContent className="p-0">
           <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Дата и время</TableHead>
-                <TableHead>Камера</TableHead>
-                <TableHead>Источник</TableHead>
-                <TableHead>Описание</TableHead>
-                <TableHead>Статус</TableHead>
-                <TableHead className="w-[100px]">Действие</TableHead>
+            <TableHeader className="bg-slate-950/40 border-b border-slate-800/80">
+              <TableRow className="hover:bg-transparent border-transparent">
+                <TableHead className="text-slate-400 font-bold uppercase text-[10px] tracking-wider py-4 px-6">Дата и время</TableHead>
+                <TableHead className="text-slate-400 font-bold uppercase text-[10px] tracking-wider py-4">Камера</TableHead>
+                <TableHead className="text-slate-400 font-bold uppercase text-[10px] tracking-wider py-4">Источник</TableHead>
+                <TableHead className="text-slate-400 font-bold uppercase text-[10px] tracking-wider py-4">Описание</TableHead>
+                <TableHead className="text-slate-400 font-bold uppercase text-[10px] tracking-wider py-4">Статус</TableHead>
+                <TableHead className="text-slate-400 font-bold uppercase text-[10px] tracking-wider py-4 text-right pr-6">Действие</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-slate-500">
-                    Загрузка…
+                <TableRow className="border-b border-slate-800/40 hover:bg-transparent">
+                  <TableCell colSpan={6} className="h-32">
+                    <div className="flex flex-col items-center justify-center text-slate-500">
+                      <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mb-2" />
+                      <span className="text-sm font-medium">Синхронизация...</span>
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-slate-500">
+                <TableRow className="border-b border-slate-800/40 hover:bg-transparent">
+                  <TableCell colSpan={6} className="h-32 text-center text-slate-500 font-medium">
                     Ничего не найдено
                   </TableCell>
                 </TableRow>
@@ -628,32 +698,35 @@ export default function IncidentsPage({
                   const meta = (e.meta as any) || {};
                   const source = meta.source || "ai";
                   const status = meta.status || "new";
-                  const description =
-                    meta.description || meta.text || e.type.toUpperCase();
+                  const description = meta.description || meta.text || e.type.toUpperCase();
+                  
                   return (
                     <TableRow
                       key={e.id}
-                      className="cursor-pointer hover:bg-slate-50"
+                      className="cursor-pointer group hover:bg-slate-800/40 border-b border-slate-800/40 transition-colors"
                       onClick={() => onViewDetails(e.id)}
                     >
-                      <TableCell>
-                        <div>
-                          <div className="text-slate-900">{date}</div>
-                          <div className="text-slate-500">{time}</div>
+                      <TableCell className="px-6 py-4">
+                        <div className="flex flex-col">
+                          <span className="text-slate-200 font-bold">{date}</span>
+                          <span className="text-slate-500 text-xs font-semibold">{time}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-slate-700">
-                        {e.camera?.name ?? "—"}
+                      <TableCell className="py-4">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-950/50 border border-slate-800 text-slate-300 text-xs font-medium">
+                          {e.camera?.name ?? "—"}
+                        </span>
                       </TableCell>
-                      <TableCell>{getSourceIcon(source)}</TableCell>
-                      <TableCell className="text-slate-900">
-                        {description}
+                      <TableCell className="py-4">{getSourceIcon(source)}</TableCell>
+                      <TableCell className="py-4">
+                        <span className="text-slate-200 font-medium group-hover:text-indigo-300 transition-colors">{description}</span>
                       </TableCell>
-                      <TableCell>{getStatusBadge(status)}</TableCell>
-                      <TableCell>
+                      <TableCell className="py-4">{getStatusBadge(status)}</TableCell>
+                      <TableCell className="py-4 text-right pr-6">
                         <Button
                           variant="ghost"
                           size="sm"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20 hover:text-indigo-200"
                           onClick={(ev: any) => {
                             ev.stopPropagation();
                             onViewDetails(e.id);
@@ -671,16 +744,18 @@ export default function IncidentsPage({
         </CardContent>
       </Card>
 
-      {/* Incidents List - Mobile */}
-      <div className="lg:hidden space-y-3">
+      {/* Список инцидентов (Mobile) */}
+      <div className="lg:hidden space-y-4">
         {loading && (
-          <Card>
-            <CardContent className="p-4 text-slate-500">Загрузка…</CardContent>
+          <Card className="border-slate-800 bg-slate-900/50">
+            <CardContent className="p-8 flex justify-center text-indigo-400">
+               <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+            </CardContent>
           </Card>
         )}
         {!loading && filtered.length === 0 && (
-          <Card>
-            <CardContent className="p-4 text-slate-500">
+          <Card className="border-slate-800 bg-slate-900/50">
+            <CardContent className="p-8 text-center text-slate-500 font-medium">
               Ничего не найдено
             </CardContent>
           </Card>
@@ -691,36 +766,43 @@ export default function IncidentsPage({
             const meta = (e.meta as any) || {};
             const source = meta.source || "ai";
             const status = meta.status || "new";
-            const description =
-              meta.description || meta.text || e.type.toUpperCase();
+            const description = meta.description || meta.text || e.type.toUpperCase();
             const participants = meta.participants || "";
             return (
               <Card
                 key={e.id}
-                className="cursor-pointer hover:shadow-lg transition-shadow"
+                className="cursor-pointer border-slate-800/80 bg-slate-900/50 backdrop-blur-xl hover:bg-slate-800/60 transition-colors shadow-lg rounded-2xl overflow-hidden group"
                 onClick={() => onViewDetails(e.id)}
               >
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <div className="text-slate-900 mb-1">{description}</div>
-                      <div className="text-slate-500">
+                <CardContent className="p-5">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="pr-4">
+                      <div className="text-white font-bold text-base mb-1.5 leading-snug group-hover:text-indigo-300 transition-colors">{description}</div>
+                      <div className="flex items-center gap-2 text-slate-500 text-xs font-medium">
+                        <CalendarIcon className="w-3.5 h-3.5" />
                         {date} в {time}
                       </div>
                     </div>
-                    <ChevronRight className="h-5 w-5 text-slate-400 flex-shrink-0" />
+                    <div className="p-2 bg-slate-800 rounded-full group-hover:bg-indigo-500/20 transition-colors">
+                      <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-indigo-400" />
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex flex-wrap items-center gap-2 mb-3">
                     {getSourceIcon(source)}
+                    <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-950/50 border border-slate-800 text-slate-400 text-xs font-medium shadow-inner">
+                      {e.camera?.name ?? "Камера: —"}
+                    </span>
                   </div>
                   {participants && (
-                    <div className="text-slate-600 mb-3">{participants}</div>
+                    <div className="text-slate-400 text-sm mb-4 bg-slate-950/30 p-2.5 rounded-xl border border-slate-800/50">
+                      Участники: <span className="text-slate-300 font-medium">{participants}</span>
+                    </div>
                   )}
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between border-t border-slate-800/60 pt-3">
                     {getStatusBadge(status)}
-                    <Button variant="ghost" size="sm">
+                    <span className="text-xs font-bold text-indigo-400">
                       Подробнее
-                    </Button>
+                    </span>
                   </div>
                 </CardContent>
               </Card>

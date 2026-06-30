@@ -1,22 +1,34 @@
-import { useEffect, useState } from "react";
-// import { format } from "date-fns"; // unused, relying on Intl
+import { useEffect, useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   ChevronRight,
   Activity,
   Loader2,
   TrendingUp,
-  Calendar,
+  TrendingDown,
+  Calendar as CalendarIcon,
   Zap,
+  Users,
+  Clock,
+  Mic,
+  Video,
+  Smile,
+  MessageSquare,
 } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import {
-  Area,
   AreaChart,
-  Bar,
-  BarChart,
+  Area,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
   CartesianGrid,
   XAxis,
   YAxis,
+  ResponsiveContainer,
+  Tooltip,
 } from "recharts";
 
 import {
@@ -26,9 +38,13 @@ import {
   CardHeader,
   CardTitle,
 } from "../ui/card";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "../ui/chart";
 import { Button } from "../ui/button";
-import { listEvents } from "../../lib/events";
+import { Calendar } from "../ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { Avatar, AvatarFallback } from "../ui/avatar";
+import { Badge } from "../ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import { listEvents, type EventItem } from "../../lib/events";
 import { useAuth } from "../../providers/AuthProvider";
 import { cn } from "../ui/utils";
 
@@ -36,496 +52,1078 @@ interface DashboardProps {
   onNavigateToIncidents: () => void;
 }
 
-export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
-  const { user } = useAuth();
-  // Default to last 7 days
-  const [date, setDate] = useState<DateRange | undefined>({
-    from: new Date(new Date().setDate(new Date().getDate() - 7)),
-    to: new Date(),
+// Вспомогательная функция для хэширования
+function getStringHash(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+// Парсинг визиторов из эвентов
+function getVisitorsFromEvents(events: EventItem[]) {
+  const visitorsMap = new Map<
+    string,
+    {
+      id: string;
+      alias: string;
+      avatarGradient: string;
+      lastSeen: string | number;
+      count: number;
+      source: "face" | "voice";
+    }
+  >();
+
+  events.forEach((ev) => {
+    let visitorId = "unknown";
+    let source: "face" | "voice" = "voice";
+
+    const transcript = ev.meta?.transcript || "";
+    if (transcript) {
+      const hash = getStringHash(transcript) % 6;
+      visitorId = `voice_${hash}`;
+      source = "voice";
+    } else {
+      const hash = getStringHash(ev.cameraId || "default") % 5;
+      visitorId = `face_${hash}`;
+      source = "face";
+    }
+
+    if (!visitorsMap.has(visitorId)) {
+      const shortId = Math.abs(getStringHash(visitorId)) % 10000;
+      const alias =
+        source === "voice" ? `Голос #${shortId}` : `Личность #${shortId}`;
+
+      const gradients = [
+        "from-indigo-500 to-purple-500",
+        "from-blue-500 to-cyan-500",
+        "from-emerald-500 to-teal-500",
+        "from-amber-500 to-orange-500",
+        "from-pink-500 to-rose-500",
+        "from-violet-500 to-fuchsia-500",
+      ];
+      const gradient = gradients[shortId % gradients.length];
+
+      visitorsMap.set(visitorId, {
+        id: visitorId,
+        alias,
+        avatarGradient: gradient,
+        lastSeen: ev.timestamp,
+        count: 0,
+        source,
+      });
+    }
+
+    const visitor = visitorsMap.get(visitorId)!;
+    visitor.count++;
+    if (new Date(ev.timestamp) > new Date(visitor.lastSeen)) {
+      visitor.lastSeen = ev.timestamp;
+    }
   });
 
-  const [data, setData] = useState<{ ts: string; count: number }[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<"daily" | "hourly">("daily");
+  return Array.from(visitorsMap.values()).sort(
+    (a, b) =>
+      new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime()
+  );
+}
 
+export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
+  const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const fromParam = searchParams.get("from");
+  const toParam = searchParams.get("to");
+  const period = (searchParams.get("period") || "week") as
+    | "day"
+    | "week"
+    | "month"
+    | "custom";
+
+  // Подсчёт дат
+  const dateRange = useMemo(() => {
+    let fromDate: Date;
+    let toDate: Date = new Date();
+
+    if (fromParam && toParam) {
+      fromDate = new Date(fromParam);
+      toDate = new Date(toParam);
+    } else {
+      fromDate = new Date();
+      if (period === "day") {
+        fromDate.setHours(0, 0, 0, 0);
+      } else if (period === "week") {
+        fromDate.setDate(fromDate.getDate() - 7);
+        fromDate.setHours(0, 0, 0, 0);
+      } else {
+        // month
+        fromDate.setDate(fromDate.getDate() - 30);
+        fromDate.setHours(0, 0, 0, 0);
+      }
+    }
+    return { from: fromDate, to: toDate };
+  }, [fromParam, toParam, period]);
+
+  const fromISO = useMemo(() => {
+    const d = new Date(dateRange.from);
+    d.setHours(0, 0, 0, 0);
+    return d.toISOString();
+  }, [dateRange.from]);
+
+  const toISO = useMemo(() => {
+    const d = new Date(dateRange.to);
+    d.setHours(23, 59, 59, 999);
+    return d.toISOString();
+  }, [dateRange.to]);
+
+  const [events, setEvents] = useState<EventItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Загрузка эвентов
   useEffect(() => {
+    let ignore = false;
     async function load() {
-      if (!date?.from) return;
       setLoading(true);
       try {
-        const fromDate = date.from;
-        const toDate = date.to || date.from;
-
-        // Calculate difference in days to decide mode
-        const diffTime = Math.abs(toDate.getTime() - fromDate.getTime());
-        // If range is < 2 days (approx), use hourly
-        const isHourly = diffTime < 2 * 24 * 60 * 60 * 1000;
-        setViewMode(isHourly ? "hourly" : "daily");
-
-        const fromISO = new Date(fromDate);
-        fromISO.setHours(0, 0, 0, 0);
-
-        const toISO = new Date(toDate);
-        toISO.setHours(23, 59, 59, 999);
-
-        console.log("📅 Dashboard: Fetching events from", fromISO, "to", toISO);
-
-        const events = await listEvents({
-          from: fromISO.toISOString(),
-          to: toISO.toISOString(),
+        const data = await listEvents({
+          from: fromISO,
+          to: toISO,
           limit: 10000,
           school_id: user?.schoolId,
         });
-
-        console.log("📊 Dashboard: Received", events.length, "events");
-
-        const map = new Map<number, number>();
-
-        const current = new Date(fromISO);
-        if (isHourly) current.setMinutes(0, 0, 0);
-        else current.setHours(0, 0, 0, 0);
-
-        const endLoop = new Date(toISO);
-
-        while (current <= endLoop) {
-          map.set(current.valueOf(), 0);
-          if (isHourly) current.setHours(current.getHours() + 1);
-          else current.setDate(current.getDate() + 1);
+        if (!ignore) {
+          setEvents(data || []);
         }
-
-        events.forEach((e) => {
-          const d = new Date(e.timestamp);
-          // Round to nearest bucket
-          if (isHourly) d.setMinutes(0, 0, 0);
-          else d.setHours(0, 0, 0, 0);
-
-          const key = d.valueOf();
-          if (map.has(key)) {
-            map.set(key, (map.get(key) || 0) + 1);
-          }
-        });
-
-        const points: { ts: string; count: number }[] = [];
-        Array.from(map.entries())
-          .sort((a, b) => a[0] - b[0])
-          .forEach(([k, v]) => {
-            points.push({ ts: new Date(k).toISOString(), count: v });
-          });
-
-        setData(points);
       } catch (e) {
-        console.error("❌ Dashboard fetch error:", e);
+        console.error("❌ Dashboard listEvents error:", e);
       } finally {
-        setLoading(false);
+        if (!ignore) setLoading(false);
       }
     }
     load();
-  }, [date, user?.schoolId]);
-
-  // Derived Statistics
-  const totalEvents = data.reduce((acc, curr) => acc + curr.count, 0);
-  const avgDaily =
-    data.length > 0 ? (totalEvents / data.length).toFixed(1) : "0";
-  const maxDay = data.reduce(
-    (max, curr) => (curr.count > max.count ? curr : max),
-    { count: 0, ts: "" },
-  );
-
-  const chartData = data.map((d) => {
-    const dateObj = new Date(d.ts);
-    return {
-      date:
-        viewMode === "hourly"
-          ? dateObj.toLocaleTimeString("ru-RU", {
-              hour: "2-digit",
-              minute: "2-digit",
-            })
-          : dateObj.toLocaleDateString("ru-RU", {
-              day: "numeric",
-              month: "short",
-            }),
-      fullDate: dateObj.toLocaleString("ru-RU"),
-      count: d.count,
+    return () => {
+      ignore = true;
     };
-  });
+  }, [fromISO, toISO, user?.schoolId]);
 
-  const chartConfig = {
-    count: {
-      label: "События",
-      color: "hsl(var(--primary))",
-    },
-  };
+  // Вычисления
+  const visitors = useMemo(() => getVisitorsFromEvents(events), [events]);
+  const uniqueVisitorsCount = visitors.length;
+  const totalDetections = events.length;
 
-  const setRange = (days: number) => {
-    const to = new Date();
-    to.setHours(23, 59, 59, 999);
+  // Динамический тренд детекций
+  const detectionsTrend = useMemo(() => {
+    if (events.length === 0) return null;
+    const midTime =
+      dateRange.from.getTime() +
+      (dateRange.to.getTime() - dateRange.from.getTime()) / 2;
+    const firstHalf = events.filter(
+      (e) => new Date(e.timestamp).getTime() < midTime
+    ).length;
+    const secondHalf = events.filter(
+      (e) => new Date(e.timestamp).getTime() >= midTime
+    ).length;
 
-    if (days === 0) {
-      // Today
-      const from = new Date();
-      from.setHours(0, 0, 0, 0);
-      setDate({ from, to });
-    } else {
-      const from = new Date();
-      from.setDate(from.getDate() - days);
-      from.setHours(0, 0, 0, 0);
-      setDate({ from, to });
+    if (firstHalf === 0) return { percent: 100, isUp: true };
+    const diff = secondHalf - firstHalf;
+    const percent = Math.round((diff / firstHalf) * 100);
+    return {
+      percent: Math.abs(percent),
+      isUp: percent >= 0,
+    };
+  }, [events, dateRange]);
+
+  const peakHour = useMemo(() => {
+    if (events.length === 0) return "—";
+    const hours = Array(24).fill(0);
+    events.forEach((ev) => {
+      const d = new Date(ev.timestamp);
+      const h = d.getHours();
+      if (!isNaN(h) && h >= 0 && h < 24) {
+        hours[h]++;
+      }
+    });
+    let maxCount = -1;
+    let peakH = -1;
+    for (let i = 0; i < 24; i++) {
+      if (hours[i] > maxCount) {
+        maxCount = hours[i];
+        peakH = i;
+      }
     }
+    if (maxCount <= 0) return "—";
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${pad(peakH)}:00`;
+  }, [events]);
+
+  const hourlyChartData = useMemo(() => {
+    const data = Array.from({ length: 24 }, (_, i) => ({
+      hour: `${String(i).padStart(2, "0")}:00`,
+      detections: 0,
+    }));
+    events.forEach((ev) => {
+      const d = new Date(ev.timestamp);
+      const h = d.getHours();
+      if (!isNaN(h) && h >= 0 && h < 24) {
+        data[h].detections++;
+      }
+    });
+    return data;
+  }, [events]);
+
+  const dailyChartData = useMemo(() => {
+    const diffTime = Math.abs(dateRange.to.getTime() - dateRange.from.getTime());
+    const isHourly = diffTime <= 24 * 60 * 60 * 1000;
+
+    if (isHourly) {
+      return hourlyChartData.map((d) => ({
+        date: d.hour,
+        fullDate: `Время суток: ${d.hour}`,
+        detections: d.detections,
+      }));
+    }
+
+    const map = new Map<number, number>();
+    const current = new Date(dateRange.from);
+    current.setHours(0, 0, 0, 0);
+    const endLoop = new Date(dateRange.to);
+    endLoop.setHours(0, 0, 0, 0);
+
+    while (current <= endLoop) {
+      map.set(current.valueOf(), 0);
+      current.setDate(current.getDate() + 1);
+    }
+
+    events.forEach((ev) => {
+      const d = new Date(ev.timestamp);
+      d.setHours(0, 0, 0, 0);
+      const key = d.valueOf();
+      if (map.has(key)) {
+        map.set(key, (map.get(key) || 0) + 1);
+      }
+    });
+
+    return Array.from(map.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([k, v]) => {
+        const d = new Date(k);
+        return {
+          date: d.toLocaleDateString("ru-RU", { day: "numeric", month: "short" }),
+          fullDate: d.toLocaleDateString("ru-RU", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          }),
+          detections: v,
+        };
+      });
+  }, [events, dateRange, hourlyChartData]);
+
+  const wordCloudData = useMemo(() => {
+    const stopwords = new Set([
+      "и", "в", "во", "на", "с", "со", "у", "о", "об", "а", "но", "что", "как",
+      "это", "этот", "все", "меня", "тебе", "тебя", "мне", "мы", "вы", "они",
+      "он", "она", "был", "была", "было", "были", "нет", "да", "же", "бы",
+      "ли", "то", "так", "за", "от", "до", "для", "из", "по", "к", "ко", "при",
+      "уже", "или", "тут", "там", "где", "когда", "кто", "чтобы", "этого",
+      "этой", "этим", "этом", "эти", "этих", "эта", "не", "нет", "хочу", "те",
+      "кто", "раз", "сто", "лет", "был", "был", "что", "кто", "как", "вам",
+    ]);
+
+    const counts: Record<string, number> = {};
+    events.forEach((ev) => {
+      const transcript = ev.meta?.transcript || "";
+      if (!transcript) return;
+      const words = transcript
+        .toLowerCase()
+        .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"']/g, "")
+        .split(/\s+/);
+
+      words.forEach((w) => {
+        const clean = w.trim();
+        if (clean.length > 2 && !stopwords.has(clean)) {
+          counts[clean] = (counts[clean] || 0) + 1;
+        }
+      });
+    });
+
+    return Object.entries(counts)
+      .map(([text, value]) => ({ text, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 12);
+  }, [events]);
+
+  const sentimentData = useMemo(() => {
+    let positive = 0;
+    let neutral = 0;
+    let negative = 0;
+
+    events.forEach((ev) => {
+      const text = (ev.meta?.transcript || "").toLowerCase();
+      const type = ev.type;
+
+      if (type === "profanity" || type === "abuse") {
+        negative++;
+      } else if (type === "SOS") {
+        negative++;
+      } else {
+        const posWords = [
+          "спасибо", "отлично", "хорошо", "здравствуйте", "привет", "помог",
+          "пожалуйста", "молодец", "супер", "класс",
+        ];
+        let isPos = false;
+        posWords.forEach((pw) => {
+          if (text.includes(pw)) isPos = true;
+        });
+        if (isPos) positive++;
+        else neutral++;
+      }
+    });
+
+    return [
+      { name: "Позитивный", value: positive, color: "#10b981" },
+      { name: "Нейтральный", value: neutral, color: "#94a3b8" },
+      { name: "Негативный", value: negative, color: "#f43f5e" },
+    ].filter((d) => d.value > 0);
+  }, [events]);
+
+  const dominantSentiment = useMemo(() => {
+    if (sentimentData.length === 0) return null;
+    const total = sentimentData.reduce((acc, curr) => acc + curr.value, 0);
+    const max = sentimentData.reduce(
+      (prev, curr) => (curr.value > prev.value ? curr : prev),
+      sentimentData[0]
+    );
+    const percent = Math.round((max.value / total) * 100);
+    return {
+      name: max.name,
+      percent,
+      color: max.color,
+    };
+  }, [sentimentData]);
+
+  const handleSelectRange = (range: DateRange | undefined) => {
+    if (!range) return;
+    const newParams = new URLSearchParams(searchParams);
+    if (range.from) {
+      newParams.set("from", range.from.toISOString().split("T")[0]);
+      newParams.set("period", "custom");
+    } else {
+      newParams.delete("from");
+    }
+    if (range.to) {
+      newParams.set("to", range.to.toISOString().split("T")[0]);
+    } else {
+      newParams.delete("to");
+    }
+    setSearchParams(newParams);
   };
 
-  const isRangeActive = (days: number) => {
-    if (!date?.from || !date?.to) return false;
-    const diff = Math.abs(date.to.getTime() - date.from.getTime());
-    const dayMs = 24 * 60 * 60 * 1000;
+  const setQuickRange = (rangeType: "day" | "week" | "month") => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete("from");
+    newParams.delete("to");
+    newParams.set("period", rangeType);
+    setSearchParams(newParams);
+  };
 
-    if (days === 0) return diff < dayMs; // Approx < 1 day
-    // Allow slight wiggle room for time diffs
-    return diff > (days - 1) * dayMs && diff < (days + 1) * dayMs;
+  const formatDateDisplay = (from: Date, to: Date) => {
+    const options: Intl.DateTimeFormatOptions = {
+      day: "numeric",
+      month: "short",
+    };
+    if (from.toDateString() === to.toDateString()) {
+      return from.toLocaleDateString("ru-RU", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+    }
+    return `${from.toLocaleDateString("ru-RU", options)} — ${to.toLocaleDateString("ru-RU", options)}`;
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+    <div className="space-y-8 animate-in fade-in duration-500 text-slate-100">
+      {/* Шапка и фильтры даты */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-slate-900/50 backdrop-blur-xl p-6 rounded-3xl border border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
         <div>
-          <h2 className="text-3xl font-extrabold tracking-tight text-foreground">
+          <h2 className="text-3xl font-extrabold tracking-tight text-white drop-shadow-sm">
             Главная панель
           </h2>
-          <p className="text-muted-foreground mt-2 text-lg">
+          <p className="text-slate-400 mt-1 text-sm font-medium">
             Обзор активности и мониторинг безопасности в реальном времени
           </p>
         </div>
 
-        {/* Date Filters */}
-        <div className="bg-muted/50 p-1 rounded-lg flex items-center gap-1 border border-border/50 backdrop-blur-sm">
-          <Button
-            variant={isRangeActive(0) ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setRange(0)}
-            className="rounded-md transition-all font-medium"
-          >
-            Сегодня
-          </Button>
-          <div className="w-px h-4 bg-border mx-1" />
-          <Button
-            variant={isRangeActive(7) ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setRange(7)}
-            className="rounded-md transition-all font-medium"
-          >
-            7 дней
-          </Button>
-          <div className="w-px h-4 bg-border mx-1" />
-          <Button
-            variant={isRangeActive(30) ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setRange(30)}
-            className="rounded-md transition-all font-medium"
-          >
-            30 дней
-          </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Быстрые фильтры */}
+          <div className="bg-slate-950/80 p-0.5 rounded-xl flex items-center gap-0.5 border border-slate-800/80 shadow-inner">
+            <Button
+              variant={period === "day" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setQuickRange("day")}
+              className={cn(
+                "rounded-lg transition-all font-semibold text-xs h-8 px-3.5",
+                period === "day" ? "bg-indigo-600 text-white shadow-[0_0_15px_-3px_rgba(79,70,229,0.5)]" : "text-slate-400 hover:text-white"
+              )}
+            >
+              Сегодня
+            </Button>
+            <Button
+              variant={period === "week" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setQuickRange("week")}
+              className={cn(
+                "rounded-lg transition-all font-semibold text-xs h-8 px-3.5",
+                period === "week" ? "bg-indigo-600 text-white shadow-[0_0_15px_-3px_rgba(79,70,229,0.5)]" : "text-slate-400 hover:text-white"
+              )}
+            >
+              Неделя
+            </Button>
+            <Button
+              variant={period === "month" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setQuickRange("month")}
+              className={cn(
+                "rounded-lg transition-all font-semibold text-xs h-8 px-3.5",
+                period === "month" ? "bg-indigo-600 text-white shadow-[0_0_15px_-3px_rgba(79,70,229,0.5)]" : "text-slate-400 hover:text-white"
+              )}
+            >
+              Месяц
+            </Button>
+          </div>
+
+          {/* Кастомный календарь */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={period === "custom" ? "default" : "outline"}
+                size="sm"
+                className={cn(
+                  "h-9 px-4 gap-2 font-semibold text-xs rounded-xl shadow-lg transition-all",
+                  period === "custom" 
+                    ? "bg-indigo-600 text-white shadow-indigo-500/25 border-transparent" 
+                    : "bg-slate-900/50 text-slate-300 border-slate-800 hover:bg-slate-800 hover:text-white hover:border-slate-700"
+                )}
+              >
+                <CalendarIcon className={cn("h-4 w-4", period === "custom" ? "text-indigo-200" : "text-indigo-400")} />
+                {formatDateDisplay(dateRange.from, dateRange.to)}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-auto p-0 border-slate-800 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-3xl bg-slate-900"
+              align="end"
+            >
+              <Calendar
+                initialFocus
+                mode="range"
+                defaultMonth={dateRange.from}
+                selected={{ from: dateRange.from, to: dateRange.to }}
+                onSelect={handleSelectRange}
+                className="rounded-3xl bg-slate-900 text-slate-100"
+              />
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 
-      {/* Statistics Grid */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {/* Card 1: Total Events */}
-        <Card className="relative overflow-hidden border-none shadow-lg bg-gradient-to-br from-background to-muted/20">
-          <div className="absolute top-0 right-0 p-4 opacity-10">
-            <Activity className="w-24 h-24" />
-          </div>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 z-10">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Всего событий
+      {/* Grid с карточками с общими цифрами */}
+      <div className="grid gap-6 md:grid-cols-3">
+        {/* Уникальные посетители */}
+        <Card className="relative overflow-hidden border border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_8px_30px_rgba(99,102,241,0.15)] transition-all duration-300 hover:-translate-y-1 bg-slate-900/50 backdrop-blur-xl rounded-3xl group">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-cyan-400" />
+          <div className="absolute -top-12 -right-12 w-28 h-28 bg-indigo-500/10 rounded-full group-hover:scale-125 group-hover:bg-indigo-500/20 transition-all duration-700 blur-2xl" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+            <CardTitle className="text-xs font-bold tracking-wider text-slate-400 uppercase">
+              Уникальные посетители
             </CardTitle>
-            <div className="p-2 bg-primary/10 rounded-full">
+            <div className="p-2 bg-indigo-500/10 rounded-xl border border-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
               {loading ? (
-                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                <Loader2 className="h-4 w-4 animate-spin text-indigo-400" />
               ) : (
-                <Activity className="h-4 w-4 text-primary" />
+                <Users className="h-4 w-4 text-indigo-400" />
               )}
             </div>
           </CardHeader>
-          <CardContent className="z-10">
+          <CardContent className="relative z-10">
             {loading ? (
-              <div className="h-9 w-24 bg-muted animate-pulse rounded mt-1" />
+              <div className="h-9 w-16 bg-slate-800 animate-pulse rounded-lg mt-1" />
             ) : (
-              <div className="text-4xl font-bold tracking-tight mt-1">
-                {totalEvents}
+              <div className="text-4xl font-extrabold tracking-tight text-white mt-1 drop-shadow-md">
+                {uniqueVisitorsCount}
               </div>
             )}
-            <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-              <span className="text-primary font-medium">
-                За выбранный период
-              </span>
+            <p className="text-[11px] text-slate-400 font-medium mt-3">
+              Идентифицировано в реальном времени
             </p>
           </CardContent>
         </Card>
 
-        {/* Card 2: Average Daily */}
-        <Card className="relative overflow-hidden border-none shadow-lg bg-gradient-to-br from-background to-muted/20">
-          <div className="absolute top-0 right-0 p-4 opacity-10">
-            <TrendingUp className="w-24 h-24" />
-          </div>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 z-10">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Среднее в день
+        {/* Общее количество детекций */}
+        <Card className="relative overflow-hidden border border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_8px_30px_rgba(244,63,94,0.15)] transition-all duration-300 hover:-translate-y-1 bg-slate-900/50 backdrop-blur-xl rounded-3xl group">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-rose-500 to-orange-400" />
+          <div className="absolute -top-12 -right-12 w-28 h-28 bg-rose-500/10 rounded-full group-hover:scale-125 group-hover:bg-rose-500/20 transition-all duration-700 blur-2xl" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+            <CardTitle className="text-xs font-bold tracking-wider text-slate-400 uppercase">
+              Всего детекций
             </CardTitle>
-            <div className="p-2 bg-blue-500/10 rounded-full">
-              <TrendingUp className="h-4 w-4 text-blue-500" />
+            <div className="p-2 bg-rose-500/10 rounded-xl border border-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.2)]">
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin text-rose-400" />
+              ) : (
+                <Activity className="h-4 w-4 text-rose-400" />
+              )}
             </div>
           </CardHeader>
-          <CardContent className="z-10">
+          <CardContent className="relative z-10">
             {loading ? (
-              <div className="h-9 w-20 bg-muted animate-pulse rounded mt-1" />
+              <div className="h-9 w-16 bg-slate-800 animate-pulse rounded-lg mt-1" />
             ) : (
-              <div className="text-4xl font-bold tracking-tight mt-1">
-                {avgDaily}
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl font-extrabold tracking-tight text-white mt-1 drop-shadow-md">
+                  {totalDetections}
+                </span>
+                {detectionsTrend && (
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-0.5 px-2 py-0.5 text-[10px] font-bold rounded-md shadow-inner",
+                      detectionsTrend.isUp
+                        ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
+                        : "bg-rose-500/10 border border-rose-500/20 text-rose-400"
+                    )}
+                  >
+                    {detectionsTrend.isUp ? (
+                      <TrendingUp className="h-3 w-3" />
+                    ) : (
+                      <TrendingDown className="h-3 w-3" />
+                    )}
+                    {detectionsTrend.percent}%
+                  </span>
+                )}
               </div>
             )}
-            <p className="text-xs text-muted-foreground mt-2">
-              Интенсивность событий
+            <p className="text-[11px] text-slate-400 font-medium mt-3">
+              Инциденты за выбранный период
             </p>
           </CardContent>
         </Card>
 
-        {/* Card 3: Peak Day */}
-        <Card className="relative overflow-hidden border-none shadow-lg bg-gradient-to-br from-background to-muted/20">
-          <div className="absolute top-0 right-0 p-4 opacity-10">
-            <Zap className="w-24 h-24" />
-          </div>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 z-10">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Пиковая активность
+        {/* Пиковый час активности */}
+        <Card className="relative overflow-hidden border border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_8px_30px_rgba(234,179,8,0.15)] transition-all duration-300 hover:-translate-y-1 bg-slate-900/50 backdrop-blur-xl rounded-3xl group">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-yellow-500" />
+          <div className="absolute -top-12 -right-12 w-28 h-28 bg-amber-500/10 rounded-full group-hover:scale-125 group-hover:bg-amber-500/20 transition-all duration-700 blur-2xl" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+            <CardTitle className="text-xs font-bold tracking-wider text-slate-400 uppercase">
+              Пиковый час
             </CardTitle>
-            <div className="p-2 bg-amber-500/10 rounded-full">
-              <Zap className="h-4 w-4 text-amber-500" />
+            <div className="p-2 bg-amber-500/10 rounded-xl border border-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin text-amber-400" />
+              ) : (
+                <Zap className="h-4 w-4 text-amber-400" />
+              )}
             </div>
           </CardHeader>
-          <CardContent className="z-10">
+          <CardContent className="relative z-10">
             {loading ? (
-              <div className="h-9 w-32 bg-muted animate-pulse rounded mt-1" />
-            ) : maxDay.count > 0 ? (
-              <div className="flex flex-col">
-                <span className="text-2xl font-bold tracking-tight mt-1">
-                  {new Date(maxDay.ts).toLocaleDateString("ru-RU", {
-                    day: "numeric",
-                    month: "long",
-                  })}
-                </span>
-                <span className="text-xs font-medium text-amber-600">
-                  {maxDay.count} событий
-                </span>
-              </div>
+              <div className="h-9 w-24 bg-slate-800 animate-pulse rounded-lg mt-1" />
             ) : (
-              <div className="text-2xl font-bold tracking-tight mt-1">-</div>
+              <div className="text-4xl font-extrabold tracking-tight text-white mt-1 drop-shadow-md">
+                {peakHour}
+              </div>
             )}
+            <p className="text-[11px] text-slate-400 font-medium mt-3">
+              Максимальная плотность событий
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Main Chart */}
-      <Card className="border-none shadow-xl bg-card">
-        <CardHeader>
-          <CardTitle>Динамика инцидентов</CardTitle>
-          <CardDescription>Визуализация активности во времени</CardDescription>
-        </CardHeader>
-        <CardContent className="pl-2 pt-4">
-          <div
-            className={cn(
-              "transition-all duration-500",
-              loading ? "opacity-50 blur-[2px]" : "opacity-100 blur-0",
-            )}
-          >
-            {chartData.length > 0 ? (
-              <div className="h-[400px] w-full">
-                <ChartContainer config={chartConfig} className="h-full w-full">
-                  {viewMode === "hourly" ? (
-                    <BarChart
-                      data={chartData}
-                      margin={{
-                        top: 20,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                      }}
+      {/* Раздел с табами графиков */}
+      <Tabs defaultValue="progression" className="w-full">
+        <Card className="border border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-3xl bg-slate-900/50 backdrop-blur-xl overflow-hidden">
+          <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-2 gap-4 border-b border-slate-800/40">
+            <div>
+              <CardTitle className="text-lg font-bold flex items-center gap-2 text-white">
+                <TrendingUp className="h-5 w-5 text-indigo-400 drop-shadow-[0_0_10px_rgba(99,102,241,0.8)]" />
+                Анализ динамики безопасности
+              </CardTitle>
+              <CardDescription className="text-xs font-medium text-slate-400">
+                Интеграция активности и фиксации угроз во времени
+              </CardDescription>
+            </div>
+
+            <TabsList className="bg-slate-950/50 p-1 rounded-xl border border-slate-800/80 shadow-inner">
+              <TabsTrigger
+                value="progression"
+                className="rounded-lg text-xs py-1.5 px-4 font-semibold data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-[0_0_15px_-3px_rgba(79,70,229,0.5)] text-slate-400"
+              >
+                Динамика событий
+              </TabsTrigger>
+              <TabsTrigger
+                value="hourly"
+                className="rounded-lg text-xs py-1.5 px-4 font-semibold data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-[0_0_15px_-3px_rgba(79,70,229,0.5)] text-slate-400"
+              >
+                Активность по часам
+              </TabsTrigger>
+            </TabsList>
+          </CardHeader>
+
+          <CardContent className="pt-4 pl-1 pr-6 pb-6 relative">
+            <div className="absolute inset-0 bg-gradient-to-t from-indigo-500/5 to-transparent pointer-events-none" />
+            <TabsContent value="progression" className="outline-none relative z-10">
+              <div
+                className={cn(
+                  "transition-all duration-300",
+                  loading ? "opacity-50 blur-[2px]" : "opacity-100"
+                )}
+              >
+                {dailyChartData.length > 0 ? (
+                  <div className="h-[300px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart
+                        data={dailyChartData}
+                        margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                      >
+                        <defs>
+                          <linearGradient id="colorProgress" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#818cf8" stopOpacity={0.6} />
+                            <stop offset="95%" stopColor="#818cf8" stopOpacity={0.0} />
+                          </linearGradient>
+                          <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="4" result="blur" />
+                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                          </filter>
+                        </defs>
+                        <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                        <XAxis
+                          dataKey="date"
+                          tickLine={false}
+                          axisLine={false}
+                          tickMargin={10}
+                          className="text-[11px] font-medium fill-slate-500"
+                        />
+                        <YAxis
+                          tickLine={false}
+                          axisLine={false}
+                          tickMargin={10}
+                          allowDecimals={false}
+                          className="text-[11px] font-medium fill-slate-500"
+                        />
+                        <Tooltip
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              const d = payload[0].payload;
+                              return (
+                                <div className="bg-slate-900/90 backdrop-blur-xl text-white rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.5)] p-3 border border-slate-700/80 text-xs">
+                                  <p className="font-semibold mb-1 text-slate-200">
+                                    {d.fullDate || d.date}
+                                  </p>
+                                  <p className="text-indigo-400">
+                                    Детекций:{" "}
+                                    <span className="font-bold text-white text-sm">
+                                      {payload[0].value}
+                                    </span>
+                                  </p>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="detections"
+                          stroke="#818cf8"
+                          strokeWidth={3}
+                          fillOpacity={1}
+                          fill="url(#colorProgress)"
+                          activeDot={{ r: 6, strokeWidth: 2, stroke: "#1e1b4b", fill: "#818cf8", filter: "url(#glow)" }}
+                          style={{ filter: "drop-shadow(0 0 8px rgba(129,140,248,0.5))" }}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="h-[300px] flex flex-col items-center justify-center text-slate-500 border border-dashed border-slate-800 rounded-xl bg-slate-900/20">
+                    <CalendarIcon className="w-10 h-10 opacity-30 mb-3" />
+                    <p className="text-sm">Нет данных за выбранный период</p>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="hourly" className="outline-none relative z-10">
+              <div
+                className={cn(
+                  "transition-all duration-300",
+                  loading ? "opacity-50 blur-[2px]" : "opacity-100"
+                )}
+              >
+                {events.length > 0 ? (
+                  <div className="h-[300px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={hourlyChartData}
+                        margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                      >
+                        <defs>
+                          <linearGradient id="colorActivity" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%" stopColor="#22d3ee" />
+                            <stop offset="50%" stopColor="#818cf8" />
+                            <stop offset="100%" stopColor="#c084fc" />
+                          </linearGradient>
+                          <filter id="glowLine" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="3" result="blur" />
+                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                          </filter>
+                        </defs>
+                        <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                        <XAxis
+                          dataKey="hour"
+                          tickLine={false}
+                          axisLine={false}
+                          tickMargin={10}
+                          className="text-[11px] font-medium fill-slate-500"
+                        />
+                        <YAxis
+                          tickLine={false}
+                          axisLine={false}
+                          tickMargin={10}
+                          allowDecimals={false}
+                          className="text-[11px] font-medium fill-slate-500"
+                        />
+                        <Tooltip
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              return (
+                                <div className="bg-slate-900/90 backdrop-blur-xl text-white rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.5)] p-3 border border-slate-700/80 text-xs">
+                                  <p className="font-semibold mb-1 text-slate-200">
+                                    Время суток: {payload[0].payload.hour}
+                                  </p>
+                                  <p className="text-cyan-400">
+                                    Детекций:{" "}
+                                    <span className="font-bold text-white text-sm">
+                                      {payload[0].value}
+                                    </span>
+                                  </p>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="detections"
+                          stroke="url(#colorActivity)"
+                          strokeWidth={3}
+                          dot={false}
+                          activeDot={{ r: 6, strokeWidth: 2, stroke: "#0f172a", fill: "#22d3ee", filter: "url(#glowLine)" }}
+                          style={{ filter: "drop-shadow(0 0 6px rgba(34,211,238,0.6))" }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="h-[300px] flex flex-col items-center justify-center text-slate-500 border border-dashed border-slate-800 rounded-xl bg-slate-900/20">
+                    <CalendarIcon className="w-10 h-10 opacity-30 mb-3" />
+                    <p className="text-sm">Нет данных за выбранный период</p>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          </CardContent>
+        </Card>
+      </Tabs>
+
+      {/* Grid с фидом идентификации и аналитикой слов/тональности */}
+      <div className="grid gap-6 lg:grid-cols-5">
+        {/* Re-Identification Feed */}
+        <Card className="lg:col-span-3 border border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-3xl bg-slate-900/50 backdrop-blur-xl flex flex-col overflow-hidden">
+          <CardHeader className="pb-3 border-b border-slate-800/40 bg-slate-900/30">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg font-bold text-white">
+                  Идентификация и перемещение
+                </CardTitle>
+                <CardDescription className="text-xs font-medium text-slate-400">
+                  Журнал перемещений и распознавания личностей
+                </CardDescription>
+              </div>
+              <Badge variant="outline" className="px-3 py-1 text-[11px] font-bold bg-slate-800/50 text-slate-300 border-slate-700 rounded-lg shadow-inner">
+                {visitors.length} человек(а)
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="flex-1 overflow-auto max-h-[380px] p-2 pr-4 custom-scrollbar">
+            {loading ? (
+              <div className="space-y-3 pt-2">
+                {[1, 2, 3].map((n) => (
+                  <div
+                    key={n}
+                    className="h-14 bg-slate-800/50 animate-pulse rounded-2xl border border-slate-700/50"
+                  />
+                ))}
+              </div>
+            ) : visitors.length > 0 ? (
+              <div className="space-y-2 pt-2">
+                {visitors.map((v) => {
+                  const lastSeenDate = new Date(v.lastSeen);
+                  const isToday =
+                    lastSeenDate.toDateString() === new Date().toDateString();
+                  const timeFormatted = lastSeenDate.toLocaleTimeString(
+                    "ru-RU",
+                    { hour: "2-digit", minute: "2-digit" }
+                  );
+                  const dateFormatted = lastSeenDate.toLocaleDateString(
+                    "ru-RU",
+                    { day: "numeric", month: "short" }
+                  );
+                  const timeString = isToday
+                    ? `Сегодня в ${timeFormatted}`
+                    : `${dateFormatted}, ${timeFormatted}`;
+
+                  // Установить маркер активности (если замечен за последние 12 часов)
+                  const isRecentlySeen =
+                    new Date().getTime() - lastSeenDate.getTime() <
+                    12 * 60 * 60 * 1000;
+
+                  return (
+                    <div
+                      key={v.id}
+                      className="flex items-center justify-between py-3 px-4 hover:bg-slate-800/60 rounded-2xl transition-all border border-transparent hover:border-slate-700/50 group"
                     >
-                      <CartesianGrid
-                        vertical={false}
-                        strokeDasharray="4 4"
-                        stroke="hsl(var(--border))"
-                        strokeOpacity={0.4}
-                      />
-                      <XAxis
-                        dataKey="date"
-                        tickLine={false}
-                        axisLine={false}
-                        tickMargin={12}
-                        minTickGap={30}
-                        className="text-xs font-medium fill-muted-foreground"
-                      />
-                      <YAxis
-                        tickLine={false}
-                        axisLine={false}
-                        tickMargin={12}
-                        allowDecimals={false}
-                        className="text-xs font-medium fill-muted-foreground"
-                      />
-                      <ChartTooltip
-                        cursor={{
-                          fill: "hsl(var(--muted))",
-                          opacity: 0.2,
-                        }}
-                        content={
-                          <ChartTooltipContent
-                            className="bg-background/80 backdrop-blur-md border border-border/50 shadow-2xl rounded-xl p-3"
-                            indicator="dot"
-                          />
-                        }
-                      />
-                      <Bar
-                        dataKey="count"
-                        fill="hsl(var(--primary))"
-                        radius={[4, 4, 0, 0]}
-                        maxBarSize={50}
-                        className="fill-primary"
-                      />
-                    </BarChart>
-                  ) : (
-                    <AreaChart
-                      data={chartData}
-                      margin={{
-                        top: 20,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                      }}
-                    >
-                      <defs>
-                        <linearGradient
-                          id="fillCount"
-                          x1="0"
-                          y1="0"
-                          x2="0"
-                          y2="1"
+                      <div className="flex items-center gap-4">
+                        <div className="relative">
+                          <Avatar className="h-11 w-11 border border-slate-700 shadow-lg group-hover:scale-105 transition-transform">
+                            <AvatarFallback
+                              className={cn(
+                                "text-white font-extrabold text-sm bg-gradient-to-tr",
+                                v.avatarGradient
+                              )}
+                            >
+                              {v.source === "voice" ? "🎙️" : "👤"}
+                            </AvatarFallback>
+                          </Avatar>
+                          {isRecentlySeen && (
+                            <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 border-2 border-slate-900"></span>
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <div className="text-sm font-bold text-slate-200 group-hover:text-indigo-400 transition-colors drop-shadow-sm">
+                            {v.alias}
+                          </div>
+                          <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5 mt-1">
+                            <Clock className="h-3 w-3 text-slate-500" />
+                            {timeString}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        {/* Источник распознавания */}
+                        <div>
+                          {v.source === "voice" ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold bg-violet-500/10 text-violet-400 border border-violet-500/20 rounded-lg shadow-inner">
+                              <Mic className="h-3 w-3" /> голос
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 rounded-lg shadow-inner">
+                              <Video className="h-3 w-3" /> лицо
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Количество детекций */}
+                        <Badge
+                          variant="secondary"
+                          className="bg-slate-800 text-slate-300 font-semibold px-2.5 py-0.5 text-[10px] rounded-md border border-slate-700"
                         >
-                          <stop
-                            offset="5%"
-                            stopColor="hsl(var(--primary))"
-                            stopOpacity={0.5}
-                          />
-                          <stop
-                            offset="50%"
-                            stopColor="hsl(var(--primary))"
-                            stopOpacity={0.2}
-                          />
-                          <stop
-                            offset="95%"
-                            stopColor="hsl(var(--primary))"
-                            stopOpacity={0.0}
-                          />
-                        </linearGradient>
-                        <linearGradient
-                          id="lineGradient"
-                          x1="0"
-                          y1="0"
-                          x2="1"
-                          y2="0"
-                        >
-                          <stop
-                            offset="0%"
-                            stopColor="hsl(var(--primary))"
-                            stopOpacity={0.8}
-                          />
-                          <stop
-                            offset="100%"
-                            stopColor="hsl(var(--primary))"
-                            stopOpacity={1}
-                          />
-                        </linearGradient>
-                        <filter
-                          id="glow"
-                          height="300%"
-                          width="300%"
-                          x="-100%"
-                          y="-100%"
-                        >
-                          <feGaussianBlur
-                            stdDeviation="3"
-                            result="coloredBlur"
-                          />
-                          <feMerge>
-                            <feMergeNode in="coloredBlur" />
-                            <feMergeNode in="SourceGraphic" />
-                          </feMerge>
-                        </filter>
-                      </defs>
-                      <CartesianGrid
-                        vertical={false}
-                        strokeDasharray="4 4"
-                        stroke="hsl(var(--border))"
-                        strokeOpacity={0.4}
-                      />
-                      <XAxis
-                        dataKey="date"
-                        tickLine={false}
-                        axisLine={false}
-                        tickMargin={12}
-                        minTickGap={30}
-                        className="text-xs font-medium fill-muted-foreground"
-                      />
-                      <YAxis
-                        tickLine={false}
-                        axisLine={false}
-                        tickMargin={12}
-                        allowDecimals={false}
-                        className="text-xs font-medium fill-muted-foreground"
-                      />
-                      <ChartTooltip
-                        cursor={{
-                          stroke: "hsl(var(--primary))",
-                          strokeWidth: 2,
-                          strokeDasharray: "4 4",
-                          strokeOpacity: 0.5,
-                        }}
-                        content={
-                          <ChartTooltipContent
-                            className="bg-background/80 backdrop-blur-md border border-border/50 shadow-2xl rounded-xl p-3"
-                            indicator="dot"
-                          />
-                        }
-                      />
-                      <Area
-                        dataKey="count"
-                        type="monotone"
-                        fill="url(#fillCount)"
-                        fillOpacity={1}
-                        stroke="url(#lineGradient)"
-                        strokeWidth={3}
-                        filter="url(#glow)"
-                        activeDot={{
-                          r: 6,
-                          strokeWidth: 0,
-                          className: "fill-primary animate-pulse",
-                        }}
-                      />
-                    </AreaChart>
-                  )}
-                </ChartContainer>
+                          {v.count} раз
+                        </Badge>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
-              <div className="h-[400px] flex flex-col items-center justify-center text-muted-foreground bg-muted/20 rounded-xl border border-dashed border-border/50">
-                <Calendar className="w-12 h-12 opacity-20 mb-4" />
-                <p>Нет данных за выбранный период</p>
+              <div className="h-[200px] flex flex-col items-center justify-center text-slate-500 border border-dashed border-slate-800 rounded-2xl bg-slate-900/20 m-2">
+                <Users className="w-8 h-8 opacity-30 mb-2" />
+                <p className="text-xs font-medium">Нет зафиксированных посетителей</p>
               </div>
             )}
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      <div className="flex justify-end pt-4">
-        <Button onClick={onNavigateToIncidents} className="group" size="lg">
-          Перейти к журналу
+        {/* Word Cloud & Sentiment Donut */}
+        <div className="lg:col-span-2 space-y-6 flex flex-col justify-between">
+          {/* Word Cloud */}
+          <Card className="border border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-3xl bg-slate-900/50 backdrop-blur-xl flex-1 flex flex-col overflow-hidden">
+            <CardHeader className="pb-2 bg-slate-900/30 border-b border-slate-800/40">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5 text-indigo-400 drop-shadow-[0_0_8px_rgba(129,140,248,0.5)]" />
+                <CardTitle className="text-md font-bold text-white">
+                  Облако обсуждаемых слов
+                </CardTitle>
+              </div>
+              <CardDescription className="text-[11px] font-medium text-slate-400">
+                Популярные ключевые слова из диалогов
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 flex items-center justify-center p-4 relative">
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-900/10 via-transparent to-transparent pointer-events-none" />
+              {loading ? (
+                <div className="h-[120px] w-full bg-slate-800/50 animate-pulse rounded-2xl" />
+              ) : wordCloudData.length > 0 ? (
+                <div className="flex flex-wrap items-center justify-center gap-2 p-4 bg-slate-950/40 border border-slate-800/60 rounded-2xl min-h-[140px] w-full shadow-inner relative z-10">
+                  {wordCloudData.map((w, idx) => {
+                    const maxVal = wordCloudData[0].value;
+                    const minVal = wordCloudData[wordCloudData.length - 1].value;
+                    const range = maxVal - minVal || 1;
+                    const percentage = (w.value - minVal) / range;
+                    const fontSize = 0.8 + percentage * 0.55;
+
+                    const colors = [
+                      "text-indigo-300 bg-indigo-500/10 border-indigo-500/30 shadow-[0_0_10px_rgba(99,102,241,0.1)]",
+                      "text-purple-300 bg-purple-500/10 border-purple-500/30 shadow-[0_0_10px_rgba(168,85,247,0.1)]",
+                      "text-cyan-300 bg-cyan-500/10 border-cyan-500/30 shadow-[0_0_10px_rgba(6,182,212,0.1)]",
+                      "text-emerald-300 bg-emerald-500/10 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.1)]",
+                      "text-rose-300 bg-rose-500/10 border-rose-500/30 shadow-[0_0_10px_rgba(244,63,94,0.1)]",
+                      "text-amber-300 bg-amber-500/10 border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.1)]",
+                    ];
+                    const colorClass = colors[idx % colors.length];
+
+                    return (
+                      <span
+                        key={w.text}
+                        style={{ fontSize: `${fontSize}rem` }}
+                        className={cn(
+                          "px-3 py-1.5 rounded-xl border font-bold transition-all hover:scale-110 cursor-default duration-300 hover:brightness-125",
+                          colorClass
+                        )}
+                        title={`Частота: ${w.value} раз`}
+                      >
+                        {w.text}
+                      </span>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-slate-500 text-xs text-center p-6 border border-dashed border-slate-800 rounded-2xl bg-slate-900/20 w-full z-10">
+                  Нет ключевых слов для отображения
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Sentiment: Тональность диалогов (Donut Chart) */}
+          <Card className="border border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-3xl bg-slate-900/50 backdrop-blur-xl flex-1 flex flex-col overflow-hidden mt-6 lg:mt-0">
+            <CardHeader className="pb-1 bg-slate-900/30 border-b border-slate-800/40">
+              <div className="flex items-center gap-2">
+                <Smile className="h-5 w-5 text-indigo-400 drop-shadow-[0_0_8px_rgba(129,140,248,0.5)]" />
+                <CardTitle className="text-md font-bold text-white">
+                  Тональность инцидентов
+                </CardTitle>
+              </div>
+              <CardDescription className="text-[11px] font-medium text-slate-400">
+                Анализ эмоционального фона речевых событий
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 flex items-center justify-center p-4">
+              {loading ? (
+                <div className="h-[120px] w-full bg-slate-800/50 animate-pulse rounded-2xl" />
+              ) : sentimentData.length > 0 ? (
+                <div className="w-full flex flex-col items-center">
+                  <div className="relative flex items-center justify-center h-[140px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <defs>
+                          <filter id="glowPie" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="3" result="blur" />
+                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                          </filter>
+                        </defs>
+                        <Pie
+                          data={sentimentData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={48}
+                          outerRadius={62}
+                          paddingAngle={6}
+                          dataKey="value"
+                          stroke="none"
+                          cornerRadius={8}
+                        >
+                          {sentimentData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} style={{ filter: "drop-shadow(0 0 6px " + entry.color + "80)" }} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              const d = payload[0].payload;
+                              return (
+                                <div className="bg-slate-900/90 backdrop-blur-xl text-white rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.5)] p-2 px-3 border border-slate-700/80 text-xs flex items-center gap-2">
+                                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: d.color, boxShadow: `0 0 10px ${d.color}` }} />
+                                  <span className="font-semibold text-slate-200">
+                                    {d.name}: <span className="text-white">{d.value}</span>
+                                  </span>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    {dominantSentiment && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                        <span className="text-2xl font-extrabold text-white drop-shadow-md tracking-tight">
+                          {dominantSentiment.percent}%
+                        </span>
+                        <span
+                          className="text-[10px] font-bold tracking-wider uppercase drop-shadow-sm mt-0.5"
+                          style={{ color: dominantSentiment.color }}
+                        >
+                          {dominantSentiment.name}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  {/* Легенда */}
+                  <div className="flex justify-center flex-wrap gap-4 text-[11px] font-semibold text-slate-300 mt-4 bg-slate-950/40 px-4 py-2 rounded-xl border border-slate-800/60 shadow-inner">
+                    {sentimentData.map((d) => (
+                      <div key={d.name} className="flex items-center gap-1.5">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full shadow-sm"
+                          style={{ backgroundColor: d.color, boxShadow: `0 0 8px ${d.color}80` }}
+                        />
+                        <span>
+                          {d.name} <span className="text-slate-500 ml-0.5">({d.value})</span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-slate-500 text-xs text-center p-6 border border-dashed border-slate-800 rounded-2xl bg-slate-900/20 w-full">
+                  Нет тональностей для анализа
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <div className="flex justify-end pt-4 pb-8">
+        <Button onClick={onNavigateToIncidents} className="group bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow-[0_0_20px_rgba(79,70,229,0.4)] border border-indigo-400/30 transition-all hover:scale-105" size="lg">
+          <span className="font-bold tracking-wide">Перейти к журналу</span>
           <ChevronRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
         </Button>
       </div>

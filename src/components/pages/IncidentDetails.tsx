@@ -8,7 +8,7 @@ import {
   Users,
   Trash2,
 } from "lucide-react";
-import { Button } from "../ui/button"; // Используем только для стрелки назад
+import { Button } from "../ui/button";
 import {
   Card,
   CardContent,
@@ -19,7 +19,7 @@ import {
 import { Badge } from "../ui/badge";
 import { Separator } from "../ui/separator";
 import { Alert, AlertDescription } from "../ui/alert";
-import { httpGet, httpPatch } from "../../lib/http";
+import { httpGet } from "../../lib/http";
 import { type EventItem, deleteEvent } from "../../lib/events";
 import { useAuth } from "../../providers/AuthProvider";
 
@@ -38,37 +38,40 @@ function toDate(val: string | number | undefined | null): Date | null {
     return null;
   }
 }
+
 function formatDT(val: string | number | undefined | null) {
   const d = toDate(val);
   if (!d || Number.isNaN(d.getTime())) return { date: "-", time: "-" };
   return {
-    date: d.toLocaleDateString(),
-    time: d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    date: d.toLocaleDateString("ru-RU", { day: "numeric", month: "short", year: "numeric" }),
+    time: d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" }),
   };
 }
+
 function StatusBadge({ status }: { status?: string }) {
   switch (status) {
     case "new":
-      return <Badge className="bg-red-500 hover:bg-red-600">Новый</Badge>;
+      return <Badge className="bg-rose-500/10 text-rose-400 border-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.2)] px-3 py-1 uppercase text-xs tracking-wider font-bold">Новый</Badge>;
     case "in-progress":
       return (
-        <Badge className="bg-amber-500 hover:bg-amber-600">В работе</Badge>
+        <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.2)] px-3 py-1 uppercase text-xs tracking-wider font-bold">В работе</Badge>
       );
     case "resolved":
-      return <Badge className="bg-green-500 hover:bg-green-600">Решен</Badge>;
+      return <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.2)] px-3 py-1 uppercase text-xs tracking-wider font-bold">Решен</Badge>;
     default:
-      return <Badge variant="outline">—</Badge>;
+      return <Badge variant="outline" className="border-slate-700 text-slate-400 px-3 py-1 uppercase text-xs tracking-wider font-bold">—</Badge>;
   }
 }
+
 function SourcePill({ source }: { source?: string }) {
   return source === "manual" ? (
-    <div className="flex items-center gap-1.5 text-slate-600">
-      <Users className="h-4 w-4" />
+    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 text-sm font-semibold shadow-inner">
+      <Users className="h-4 w-4 text-slate-400" />
       <span>Добавлен вручную</span>
     </div>
   ) : (
-    <div className="flex items-center gap-1.5 text-purple-600">
-      <Sparkles className="h-4 w-4" />
+    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-sm font-semibold shadow-inner">
+      <Sparkles className="h-4 w-4 text-indigo-400" />
       <span>ИИ-камера</span>
     </div>
   );
@@ -79,8 +82,6 @@ export default function IncidentDetails({
   onBack,
 }: IncidentDetailsProps) {
   const { user } = useAuth();
-
-  // Простая и надежная проверка
   const isAdmin = (user?.role || "").toLowerCase() === "admin";
 
   const [event, setEvent] = useState<EventItem | null>(null);
@@ -90,16 +91,11 @@ export default function IncidentDetails({
   const meta: Record<string, any> = event?.meta || {};
   const source: string = meta.source || "ai";
   const status: StatusVal = (meta.status as StatusVal) || "new";
-  const [statusLocal, setStatusLocal] = useState<StatusVal>(status);
-  const [savingStatus, setSavingStatus] = useState(false);
-  const [saveMsg, setSaveMsg] = useState<string | null>(null);
 
   const { date, time } = formatDT(event?.timestamp);
   const cameraName = event?.camera?.name || meta.cameraName || "—";
   const cameraId = event?.cameraId || meta.cameraId || "—";
-  const description: string =
-    meta.description || meta.text || (event?.type ?? "Событие");
-  const participants: string = meta.participants || "";
+  const description: string = meta.description || meta.text || (event?.type ?? "Событие");
   const location: string = meta.location || meta.place || meta.transcript;
   const videoUrl = event?.videoUrl || null;
   const imageUrl = event?.imageUrl || null;
@@ -113,11 +109,9 @@ export default function IncidentDetails({
         const e = await httpGet<EventItem>(`/events/${incidentId}`);
         if (!cancelled) {
           setEvent(e);
-          setStatusLocal((e.meta?.status as StatusVal) || "new");
         }
       } catch (err1: any) {
-        if (!cancelled)
-          setLoadError(err1?.message || "Не удалось загрузить инцидент");
+        if (!cancelled) setLoadError(err1?.message || "Не удалось загрузить инцидент");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -129,11 +123,7 @@ export default function IncidentDetails({
 
   async function handleDelete() {
     if (!isAdmin) return;
-    if (
-      !window.confirm("Вы уверены, что хотите удалить эту запись безвозвратно?")
-    )
-      return;
-
+    if (!window.confirm("Вы уверены, что хотите удалить эту запись безвозвратно?")) return;
     try {
       await deleteEvent(incidentId);
       onBack();
@@ -144,133 +134,157 @@ export default function IncidentDetails({
 
   const headerRight = useMemo(() => <StatusBadge status={status} />, [status]);
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[50vh] text-indigo-400">
+        <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in duration-500 text-slate-100">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={onBack}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div className="flex-1">
-          <h2 className="text-slate-900 mb-1 font-semibold text-lg">
-            Детали инцидента #{incidentId}
-          </h2>
-          <p className="text-slate-600 text-sm">{description}</p>
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 bg-slate-900/50 backdrop-blur-xl p-6 rounded-3xl border border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
+        <div className="flex items-start gap-4">
+          <Button variant="ghost" size="icon" onClick={onBack} className="bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 rounded-xl mt-1">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">
+              Инцидент <span className="text-indigo-400">#{incidentId.substring(0,8)}</span>
+            </h2>
+            <p className="text-slate-300 text-lg font-medium">{description}</p>
+          </div>
         </div>
 
-        {isAdmin && (
-          <button
-            onClick={handleDelete}
-            style={{ color: "red" }}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white transition-colors bg-red-600 rounded-md hover:bg-red-700 shadow-sm"
-          >
-            <Trash2 className="h-4 w-4" />
-            Удалить
-          </button>
-        )}
-
-        {headerRight}
+        <div className="flex items-center gap-4">
+          {headerRight}
+          {isAdmin && (
+            <Button
+              onClick={handleDelete}
+              variant="destructive"
+              className="bg-rose-600/20 text-rose-400 hover:bg-rose-600 hover:text-white border border-rose-600/30 rounded-xl font-bold shadow-sm"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Удалить
+            </Button>
+          )}
+        </div>
       </div>
 
       {loadError && (
-        <Alert className="bg-red-50 border-red-200">
-          <AlertDescription className="text-red-700">
+        <Alert className="bg-rose-500/10 border-rose-500/20 rounded-2xl">
+          <AlertDescription className="text-rose-400 font-medium">
             {loadError}
           </AlertDescription>
         </Alert>
       )}
 
       {source === "ai" && !loadError && (
-        <Alert className="bg-purple-50 border-purple-200">
-          <Sparkles className="h-4 w-4 text-purple-600" />
-          <AlertDescription className="text-purple-900">
+        <Alert className="bg-indigo-500/10 border-indigo-500/20 rounded-2xl flex items-center shadow-inner">
+          <Sparkles className="h-5 w-5 text-indigo-400" />
+          <AlertDescription className="text-indigo-200 font-medium ml-2">
             Этот инцидент автоматически зафиксирован системой ИИ-камер
           </AlertDescription>
         </Alert>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Медиа */}
         <div className="lg:col-span-2 space-y-6">
-          {(videoUrl || imageUrl) && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Медиа инцидента</CardTitle>
-                <CardDescription>
-                  Камера {cameraName !== "—" ? cameraName : cameraId} • {time}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="relative aspect-video bg-slate-900 rounded-lg overflow-hidden mb-4">
+          <Card className="border border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] bg-slate-900/50 backdrop-blur-xl rounded-3xl overflow-hidden">
+            <CardHeader className="bg-slate-900/30 border-b border-slate-800/40 pb-4">
+              <CardTitle className="text-white text-xl">Медиа инцидента</CardTitle>
+              <CardDescription className="text-slate-400 font-medium">
+                Камера {cameraName !== "—" ? cameraName : cameraId} • {time}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-6">
+              {(videoUrl || imageUrl) ? (
+                <div className="relative aspect-video bg-black rounded-2xl overflow-hidden border border-slate-800 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
                   {videoUrl ? (
                     <video
                       src={videoUrl}
                       controls
-                      className="w-full h-full object-contain bg-black"
+                      className="w-full h-full object-contain"
                     />
                   ) : (
                     <img
                       src={imageUrl!}
                       alt="incident"
-                      className="w-full h-full object-contain bg-black"
+                      className="w-full h-full object-contain"
                     />
                   )}
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              ) : (
+                <div className="aspect-video bg-slate-950 rounded-2xl border border-slate-800 flex flex-col items-center justify-center text-slate-500">
+                  <Camera className="w-12 h-12 opacity-20 mb-4" />
+                  <p className="font-medium">Медиа файлы отсутствуют</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
+        {/* Инфо */}
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Информация</CardTitle>
+          <Card className="border border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] bg-slate-900/50 backdrop-blur-xl rounded-3xl overflow-hidden">
+            <CardHeader className="bg-slate-900/30 border-b border-slate-800/40 pb-4">
+              <CardTitle className="text-white text-xl">Детальная информация</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-3">
-                <Calendar className="h-5 w-5 text-slate-400" />
+            <CardContent className="p-6 space-y-5">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-indigo-500/10 rounded-xl border border-indigo-500/20">
+                  <Calendar className="h-5 w-5 text-indigo-400" />
+                </div>
                 <div>
-                  <div className="text-slate-500">Дата</div>
-                  <div className="text-slate-900">{date}</div>
+                  <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-0.5">Дата</div>
+                  <div className="text-slate-200 font-semibold">{date}</div>
                 </div>
               </div>
 
-              <Separator />
+              <Separator className="bg-slate-800/60" />
 
-              <div className="flex items-center gap-3">
-                <Clock className="h-5 w-5 text-slate-400" />
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-cyan-500/10 rounded-xl border border-cyan-500/20">
+                  <Clock className="h-5 w-5 text-cyan-400" />
+                </div>
                 <div>
-                  <div className="text-slate-500">Время</div>
-                  <div className="text-slate-900">{time}</div>
+                  <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-0.5">Время</div>
+                  <div className="text-slate-200 font-semibold">{time}</div>
                 </div>
               </div>
 
-              <Separator />
+              <Separator className="bg-slate-800/60" />
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-4">
                 <SourcePill source={source} />
               </div>
 
-              <Separator />
+              <Separator className="bg-slate-800/60" />
 
-              <div className="flex items-center gap-3">
-                <Camera className="h-5 w-5 text-slate-400" />
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-amber-500/10 rounded-xl border border-amber-500/20">
+                  <Camera className="h-5 w-5 text-amber-400" />
+                </div>
                 <div>
-                  <div className="text-slate-500">Камера</div>
-                  <div className="text-slate-900">
+                  <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-0.5">Локация</div>
+                  <div className="text-slate-200 font-semibold">
                     {cameraName !== "—" ? cameraName : cameraId}
                   </div>
                 </div>
               </div>
 
-              <Separator />
+              <Separator className="bg-slate-800/60" />
 
-              <div className="flex items-start gap-3">
-                <div className="w-5 h-5 flex items-center justify-center">
-                  🎙️
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-purple-500/10 rounded-xl border border-purple-500/20">
+                  <span className="text-lg leading-none">🎙️</span>
                 </div>
                 <div>
-                  <div className="text-slate-500">Транскрипт</div>
-                  <div className="text-slate-900">{location}</div>
+                  <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-0.5">Транскрипт</div>
+                  <div className="text-slate-200 font-medium leading-relaxed">{location || "Нет данных транскрипции"}</div>
                 </div>
               </div>
             </CardContent>

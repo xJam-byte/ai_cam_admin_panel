@@ -8,6 +8,7 @@ import {
   Outlet,
   useNavigate,
   useParams,
+  useLocation,
 } from "react-router-dom";
 import { Home, AlertTriangle, Camera, Menu, LogOut } from "lucide-react";
 import * as api from "./lib/api";
@@ -22,14 +23,16 @@ import ProtectedRoute from "./components/ProtectedRoute"; // защищает п
 import { AuthProvider, useAuth } from "./providers/AuthProvider"; // провайдер авторизации
 import LoginPage from "./components/pages/Login";
 function NavigationMenu({ onNavigate }: { onNavigate?: () => void }) {
+  const location = useLocation();
+  const search = location.search;
   const linkBase =
-    "justify-start w-full text-left [&.active]:bg-slate-900 [&.active]:text-white";
+    "justify-start w-full text-left font-medium transition-all [&.active]:bg-indigo-500/10 [&.active]:text-indigo-400 [&.active]:border-indigo-500/50 border border-transparent";
   return (
     <nav className="flex flex-col gap-2">
       <NavLink
-        to="/"
+        to={{ pathname: "/", search }}
         className={({ isActive }) =>
-          `btn ${linkBase} ${isActive ? "active" : ""}`
+          `btn ${linkBase} ${isActive ? "active" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"}`
         }
         onClick={onNavigate}
       >
@@ -40,9 +43,9 @@ function NavigationMenu({ onNavigate }: { onNavigate?: () => void }) {
       </NavLink>
 
       <NavLink
-        to="/incidents"
+        to={{ pathname: "/incidents", search }}
         className={({ isActive }) =>
-          `btn ${linkBase} ${isActive ? "active" : ""}`
+          `btn ${linkBase} ${isActive ? "active" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"}`
         }
         onClick={onNavigate}
       >
@@ -80,36 +83,37 @@ function Layout() {
   }, [user?.schoolId]);
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-950 text-slate-50 selection:bg-indigo-500/30">
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
+      <header className="bg-slate-900/60 backdrop-blur-xl border-b border-slate-800/60 sticky top-0 z-10 shadow-lg shadow-black/20">
         <div className="px-4 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="lg:hidden">
+                <Button variant="ghost" size="icon" className="lg:hidden text-slate-300 hover:text-white hover:bg-slate-800">
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-64">
+              <SheetContent side="left" className="w-64 bg-slate-950 border-r border-slate-800">
                 <div className="mt-8">
                   <NavigationMenu onNavigate={() => setSidebarOpen(false)} />
                 </div>
               </SheetContent>
             </Sheet>
-            <h1 className="text-slate-900">Школа: {schoolName}</h1>
-            <span className="hidden sm:inline text-slate-500">•</span>
-            <span className="hidden sm:inline text-slate-600">
+            <h1 className="text-slate-100 font-bold tracking-tight">Школа: {schoolName}</h1>
+            <span className="hidden sm:inline text-slate-700">•</span>
+            <span className="hidden sm:inline text-slate-400 font-medium">
               Директор: {user?.username || "—"}
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-green-50 rounded-lg">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              <span className="text-green-700">Система активна</span>
+          <div className="flex items-center gap-4">
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg shadow-[0_0_15px_-3px_rgba(16,185,129,0.2)]">
+              <div className="w-2 h-2 bg-emerald-400 rounded-full animate-ping absolute opacity-75" />
+              <div className="w-2 h-2 bg-emerald-500 rounded-full relative z-10" />
+              <span className="text-emerald-400 font-semibold text-xs uppercase tracking-wider">Система активна</span>
             </div>
-            <Button variant="ghost" onClick={logout} title="Выйти">
+            <Button variant="ghost" onClick={logout} title="Выйти" className="text-slate-400 hover:text-rose-400 hover:bg-rose-500/10">
               <LogOut className="h-4 w-4 mr-2" />
               Выйти
             </Button>
@@ -119,7 +123,7 @@ function Layout() {
 
       <div className="flex">
         {/* Sidebar - Desktop */}
-        <aside className="hidden lg:block w-64 bg-white border-r border-slate-200 min-h-[calc(100vh-73px)] p-4">
+        <aside className="hidden lg:block w-64 bg-slate-900/30 backdrop-blur-xl border-r border-slate-800/60 min-h-[calc(100vh-73px)] p-4">
           <NavigationMenu />
         </aside>
 
@@ -135,7 +139,14 @@ function Layout() {
 /** Роут-обёртки, чтобы пробросить коллбеки как в старом коде */
 function DashboardRoute() {
   const navigate = useNavigate();
-  return <Dashboard onNavigateToIncidents={() => navigate("/incidents")} />;
+  const location = useLocation();
+  return (
+    <Dashboard
+      onNavigateToIncidents={() =>
+        navigate({ pathname: "/incidents", search: location.search })
+      }
+    />
+  );
 }
 
 function IncidentsRoute() {
