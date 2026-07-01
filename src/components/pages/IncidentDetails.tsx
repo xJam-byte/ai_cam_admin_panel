@@ -59,14 +59,14 @@ function StatusBadge({ status }: { status?: string }) {
     case "resolved":
       return <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.2)] px-3 py-1 uppercase text-xs tracking-wider font-bold">Решен</Badge>;
     default:
-      return <Badge variant="outline" className="border-slate-700 text-slate-400 px-3 py-1 uppercase text-xs tracking-wider font-bold">—</Badge>;
+      return <Badge variant="outline" className="border-slate-300 text-slate-500 px-3 py-1 uppercase text-xs tracking-wider font-bold">—</Badge>;
   }
 }
 
 function SourcePill({ source }: { source?: string }) {
   return source === "manual" ? (
-    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 text-sm font-semibold shadow-inner">
-      <Users className="h-4 w-4 text-slate-400" />
+    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-300 text-slate-700 text-sm font-semibold shadow-inner">
+      <Users className="h-4 w-4 text-slate-500" />
       <span>Добавлен вручную</span>
     </div>
   ) : (
@@ -143,18 +143,18 @@ export default function IncidentDetails({
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 text-slate-100">
+    <div className="space-y-6 animate-in fade-in duration-500 text-slate-900">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 bg-slate-900/50 backdrop-blur-xl p-6 rounded-3xl border border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 bg-white/50 backdrop-blur-xl p-6 rounded-3xl border border-slate-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
         <div className="flex items-start gap-4">
-          <Button variant="ghost" size="icon" onClick={onBack} className="bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 rounded-xl mt-1">
+          <Button variant="ghost" size="icon" onClick={onBack} className="bg-slate-100 text-slate-700 hover:text-slate-900 hover:bg-slate-200 rounded-xl mt-1">
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">
+            <h2 className="text-2xl font-bold text-slate-900 mb-2 tracking-tight">
               Инцидент <span className="text-indigo-400">#{incidentId.substring(0,8)}</span>
             </h2>
-            <p className="text-slate-300 text-lg font-medium">{description}</p>
+            <p className="text-slate-700 text-lg font-medium">{description}</p>
           </div>
         </div>
 
@@ -164,7 +164,7 @@ export default function IncidentDetails({
             <Button
               onClick={handleDelete}
               variant="destructive"
-              className="bg-rose-600/20 text-rose-400 hover:bg-rose-600 hover:text-white border border-rose-600/30 rounded-xl font-bold shadow-sm"
+              className="bg-rose-600/20 text-rose-400 hover:bg-rose-600 hover:text-slate-900 border border-rose-600/30 rounded-xl font-bold shadow-sm"
             >
               <Trash2 className="h-4 w-4 mr-2" />
               Удалить
@@ -193,16 +193,16 @@ export default function IncidentDetails({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Медиа */}
         <div className="lg:col-span-2 space-y-6">
-          <Card className="border border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] bg-slate-900/50 backdrop-blur-xl rounded-3xl overflow-hidden">
-            <CardHeader className="bg-slate-900/30 border-b border-slate-800/40 pb-4">
-              <CardTitle className="text-white text-xl">Медиа инцидента</CardTitle>
-              <CardDescription className="text-slate-400 font-medium">
+          <Card className="border border-slate-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] bg-white/50 backdrop-blur-xl rounded-3xl overflow-hidden">
+            <CardHeader className="bg-white/30 border-b border-slate-200/40 pb-4">
+              <CardTitle className="text-slate-900 text-xl">Медиа инцидента</CardTitle>
+              <CardDescription className="text-slate-500 font-medium">
                 Камера {cameraName !== "—" ? cameraName : cameraId} • {time}
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6">
               {(videoUrl || imageUrl) ? (
-                <div className="relative aspect-video bg-black rounded-2xl overflow-hidden border border-slate-800 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+                <div className="relative aspect-video bg-black rounded-2xl overflow-hidden border border-slate-200 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
                   {videoUrl ? (
                     <video
                       src={videoUrl}
@@ -218,7 +218,7 @@ export default function IncidentDetails({
                   )}
                 </div>
               ) : (
-                <div className="aspect-video bg-slate-950 rounded-2xl border border-slate-800 flex flex-col items-center justify-center text-slate-500">
+                <div className="aspect-video bg-slate-50 rounded-2xl border border-slate-200 flex flex-col items-center justify-center text-slate-500">
                   <Camera className="w-12 h-12 opacity-20 mb-4" />
                   <p className="font-medium">Медиа файлы отсутствуют</p>
                 </div>
@@ -229,9 +229,9 @@ export default function IncidentDetails({
 
         {/* Инфо */}
         <div className="space-y-6">
-          <Card className="border border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] bg-slate-900/50 backdrop-blur-xl rounded-3xl overflow-hidden">
-            <CardHeader className="bg-slate-900/30 border-b border-slate-800/40 pb-4">
-              <CardTitle className="text-white text-xl">Детальная информация</CardTitle>
+          <Card className="border border-slate-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] bg-white/50 backdrop-blur-xl rounded-3xl overflow-hidden">
+            <CardHeader className="bg-white/30 border-b border-slate-200/40 pb-4">
+              <CardTitle className="text-slate-900 text-xl">Детальная информация</CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-5">
               <div className="flex items-center gap-4">
@@ -240,11 +240,11 @@ export default function IncidentDetails({
                 </div>
                 <div>
                   <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-0.5">Дата</div>
-                  <div className="text-slate-200 font-semibold">{date}</div>
+                  <div className="text-slate-800 font-semibold">{date}</div>
                 </div>
               </div>
 
-              <Separator className="bg-slate-800/60" />
+              <Separator className="bg-slate-100/60" />
 
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-cyan-500/10 rounded-xl border border-cyan-500/20">
@@ -252,17 +252,17 @@ export default function IncidentDetails({
                 </div>
                 <div>
                   <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-0.5">Время</div>
-                  <div className="text-slate-200 font-semibold">{time}</div>
+                  <div className="text-slate-800 font-semibold">{time}</div>
                 </div>
               </div>
 
-              <Separator className="bg-slate-800/60" />
+              <Separator className="bg-slate-100/60" />
 
               <div className="flex items-center gap-4">
                 <SourcePill source={source} />
               </div>
 
-              <Separator className="bg-slate-800/60" />
+              <Separator className="bg-slate-100/60" />
 
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-amber-500/10 rounded-xl border border-amber-500/20">
@@ -270,13 +270,13 @@ export default function IncidentDetails({
                 </div>
                 <div>
                   <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-0.5">Локация</div>
-                  <div className="text-slate-200 font-semibold">
+                  <div className="text-slate-800 font-semibold">
                     {cameraName !== "—" ? cameraName : cameraId}
                   </div>
                 </div>
               </div>
 
-              <Separator className="bg-slate-800/60" />
+              <Separator className="bg-slate-100/60" />
 
               <div className="flex items-start gap-4">
                 <div className="p-3 bg-purple-500/10 rounded-xl border border-purple-500/20">
@@ -284,7 +284,7 @@ export default function IncidentDetails({
                 </div>
                 <div>
                   <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-0.5">Транскрипт</div>
-                  <div className="text-slate-200 font-medium leading-relaxed">{location || "Нет данных транскрипции"}</div>
+                  <div className="text-slate-800 font-medium leading-relaxed">{location || "Нет данных транскрипции"}</div>
                 </div>
               </div>
             </CardContent>

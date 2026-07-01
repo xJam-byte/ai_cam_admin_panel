@@ -91,14 +91,14 @@ function getStatusBadge(status?: string) {
     case "resolved":
       return <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-inner px-2 py-0.5 uppercase text-[10px] tracking-wider font-bold hover:bg-emerald-500/20">Решен</Badge>;
     default:
-      return <Badge variant="outline" className="border-slate-700 text-slate-400 px-2 py-0.5 uppercase text-[10px] tracking-wider font-bold">—</Badge>;
+      return <Badge variant="outline" className="border-slate-300 text-slate-500 px-2 py-0.5 uppercase text-[10px] tracking-wider font-bold">—</Badge>;
   }
 }
 
 function getSourceIcon(source?: string) {
   return source === "manual" ? (
-    <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-800/50 border border-slate-700/50 text-slate-300 text-xs font-semibold shadow-inner">
-      <User className="h-3.5 w-3.5 text-slate-400" />
+    <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-100/50 border border-slate-300/50 text-slate-700 text-xs font-semibold shadow-inner">
+      <User className="h-3.5 w-3.5 text-slate-500" />
       <span>Вручную</span>
     </div>
   ) : (
@@ -371,24 +371,24 @@ export default function IncidentsPage({
   const totalCount = filtered.length;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 text-slate-100">
+    <div className="space-y-6 animate-in fade-in duration-500 text-slate-900">
       {/* Шапка страницы */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 bg-slate-900/50 backdrop-blur-xl p-6 rounded-3xl border border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 bg-white/50 backdrop-blur-xl p-6 rounded-3xl border border-slate-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
         <div>
-          <h2 className="text-3xl font-extrabold tracking-tight text-white drop-shadow-sm">Журнал инцидентов</h2>
-          <p className="text-slate-400 mt-1 text-sm font-medium">Управление и мониторинг всех событий безопасности</p>
+          <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 drop-shadow-sm">Журнал инцидентов</h2>
+          <p className="text-slate-500 mt-1 text-sm font-medium">Управление и мониторинг всех событий безопасности</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
           {/* Быстрые периоды */}
-          <div className="bg-slate-950/80 p-0.5 rounded-xl flex items-center gap-0.5 border border-slate-800/80 shadow-inner">
+          <div className="bg-slate-50/80 p-0.5 rounded-xl flex items-center gap-0.5 border border-slate-200/80 shadow-inner">
             <Button
               variant={period === "day" ? "default" : "ghost"}
               size="sm"
               onClick={() => setPeriod("day")}
               className={cn(
                 "rounded-lg transition-all font-semibold text-xs h-8 px-3.5",
-                period === "day" ? "bg-indigo-600 text-white shadow-[0_0_15px_-3px_rgba(79,70,229,0.5)]" : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+                period === "day" ? "bg-indigo-600 text-slate-900 shadow-[0_0_15px_-3px_rgba(79,70,229,0.5)]" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100/50"
               )}
             >
               Сегодня
@@ -399,7 +399,7 @@ export default function IncidentsPage({
               onClick={() => setPeriod("week")}
               className={cn(
                 "rounded-lg transition-all font-semibold text-xs h-8 px-3.5",
-                period === "week" ? "bg-indigo-600 text-white shadow-[0_0_15px_-3px_rgba(79,70,229,0.5)]" : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+                period === "week" ? "bg-indigo-600 text-slate-900 shadow-[0_0_15px_-3px_rgba(79,70,229,0.5)]" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100/50"
               )}
             >
               Неделя
@@ -410,7 +410,7 @@ export default function IncidentsPage({
               onClick={() => setPeriod("month")}
               className={cn(
                 "rounded-lg transition-all font-semibold text-xs h-8 px-3.5",
-                period === "month" ? "bg-indigo-600 text-white shadow-[0_0_15px_-3px_rgba(79,70,229,0.5)]" : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+                period === "month" ? "bg-indigo-600 text-slate-900 shadow-[0_0_15px_-3px_rgba(79,70,229,0.5)]" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100/50"
               )}
             >
               Месяц
@@ -425,8 +425,8 @@ export default function IncidentsPage({
                 className={cn(
                   "h-9 px-4 gap-2 font-semibold text-xs rounded-xl shadow-lg transition-all",
                   period === "custom" 
-                    ? "bg-indigo-600 text-white shadow-indigo-500/25 border-transparent" 
-                    : "bg-slate-900/50 text-slate-300 border-slate-800 hover:bg-slate-800 hover:text-white hover:border-slate-700"
+                    ? "bg-indigo-600 text-slate-900 shadow-indigo-500/25 border-transparent" 
+                    : "bg-white/50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:text-slate-900 hover:border-slate-300"
                 )}
               >
                 <CalendarIcon className={cn("h-4 w-4", period === "custom" ? "text-indigo-200" : "text-indigo-400")} />
@@ -448,42 +448,42 @@ export default function IncidentsPage({
                 })()}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 border-slate-800 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-3xl bg-slate-900" align="end">
+            <PopoverContent className="w-auto p-0 border-slate-200 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-3xl bg-white" align="end">
               <Calendar
                 initialFocus
                 mode="range"
                 defaultMonth={dateRange.from}
                 selected={{ from: dateRange.from, to: dateRange.to }}
                 onSelect={handleSelectRange}
-                className="rounded-3xl bg-slate-900 text-slate-100"
+                className="rounded-3xl bg-white text-slate-900"
               />
             </PopoverContent>
           </Popover>
 
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2 bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 shadow-md transition-all rounded-xl ml-2">
+              <Button className="gap-2 bg-slate-100 hover:bg-slate-200 text-slate-900 border border-slate-300 shadow-md transition-all rounded-xl ml-2">
                 <Plus className="h-4 w-4" />
                 Добавить вручную
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[520px] bg-slate-900 border-slate-800 text-slate-100 rounded-3xl shadow-2xl">
+            <DialogContent className="sm:max-w-[520px] bg-white border-slate-200 text-slate-900 rounded-3xl shadow-2xl">
               <DialogHeader>
                 <DialogTitle className="text-xl font-bold">Новый инцидент</DialogTitle>
-                <DialogDescription className="text-slate-400">
+                <DialogDescription className="text-slate-500">
                   Заполните информацию о вручную зафиксированном событии
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-5 py-4">
                 <div className="space-y-2">
-                  <Label className="text-slate-300 font-semibold">Камера</Label>
+                  <Label className="text-slate-700 font-semibold">Камера</Label>
                   <Select value={manualCameraId} onValueChange={setManualCameraId}>
-                    <SelectTrigger className="bg-slate-950 border-slate-800 text-slate-200 h-11 rounded-xl">
+                    <SelectTrigger className="bg-slate-50 border-slate-200 text-slate-800 h-11 rounded-xl">
                       <SelectValue placeholder="Выберите камеру" />
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
+                    <SelectContent className="bg-white border-slate-200 text-slate-800">
                       {cameras.map((c) => (
-                        <SelectItem key={c.id} value={c.id} className="focus:bg-slate-800 focus:text-white cursor-pointer">
+                        <SelectItem key={c.id} value={c.id} className="focus:bg-slate-100 focus:text-slate-900 cursor-pointer">
                           {c.name}
                         </SelectItem>
                       ))}
@@ -492,42 +492,42 @@ export default function IncidentsPage({
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-slate-300 font-semibold">Тип события</Label>
+                  <Label className="text-slate-700 font-semibold">Тип события</Label>
                   <Select value={manualType} onValueChange={setManualType}>
-                    <SelectTrigger className="bg-slate-950 border-slate-800 text-slate-200 h-11 rounded-xl">
+                    <SelectTrigger className="bg-slate-50 border-slate-200 text-slate-800 h-11 rounded-xl">
                       <SelectValue placeholder="Тип" />
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
-                      <SelectItem value="other" className="focus:bg-slate-800">Другое</SelectItem>
-                      <SelectItem value="scream" className="focus:bg-slate-800">Крик</SelectItem>
-                      <SelectItem value="profanity" className="focus:bg-slate-800">Нецензурная лексика</SelectItem>
-                      <SelectItem value="abuse" className="focus:bg-slate-800">Оскорбления</SelectItem>
-                      <SelectItem value="fight_1v1" className="focus:bg-slate-800">Драка 1-на-1</SelectItem>
-                      <SelectItem value="fight_group" className="focus:bg-slate-800">Массовая драка</SelectItem>
-                      <SelectItem value="zone_violation" className="focus:bg-slate-800">Нарушение зоны</SelectItem>
-                      <SelectItem value="accident" className="focus:bg-slate-800">Несчастный случай</SelectItem>
+                    <SelectContent className="bg-white border-slate-200 text-slate-800">
+                      <SelectItem value="other" className="focus:bg-slate-100">Другое</SelectItem>
+                      <SelectItem value="scream" className="focus:bg-slate-100">Крик</SelectItem>
+                      <SelectItem value="profanity" className="focus:bg-slate-100">Нецензурная лексика</SelectItem>
+                      <SelectItem value="abuse" className="focus:bg-slate-100">Оскорбления</SelectItem>
+                      <SelectItem value="fight_1v1" className="focus:bg-slate-100">Драка 1-на-1</SelectItem>
+                      <SelectItem value="fight_group" className="focus:bg-slate-100">Массовая драка</SelectItem>
+                      <SelectItem value="zone_violation" className="focus:bg-slate-100">Нарушение зоны</SelectItem>
+                      <SelectItem value="accident" className="focus:bg-slate-100">Несчастный случай</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description" className="text-slate-300 font-semibold">Описание</Label>
+                  <Label htmlFor="description" className="text-slate-700 font-semibold">Описание</Label>
                   <Input
                     id="description"
                     placeholder="Кратко о произошедшем"
                     value={manualDescription}
                     onChange={(e) => setManualDescription(e.target.value)}
-                    className="bg-slate-950 border-slate-800 text-slate-200 placeholder:text-slate-600 h-11 rounded-xl"
+                    className="bg-slate-50 border-slate-200 text-slate-800 placeholder:text-slate-600 h-11 rounded-xl"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="participants" className="text-slate-300 font-semibold">Участники</Label>
+                  <Label htmlFor="participants" className="text-slate-700 font-semibold">Участники</Label>
                   <Input
                     id="participants"
                     placeholder="Имена / классы"
                     value={manualParticipants}
                     onChange={(e) => setManualParticipants(e.target.value)}
-                    className="bg-slate-950 border-slate-800 text-slate-200 placeholder:text-slate-600 h-11 rounded-xl"
+                    className="bg-slate-50 border-slate-200 text-slate-800 placeholder:text-slate-600 h-11 rounded-xl"
                   />
                 </div>
               </div>
@@ -535,14 +535,14 @@ export default function IncidentsPage({
                 <Button
                   variant="outline"
                   onClick={() => setIsAddDialogOpen(false)}
-                  className="rounded-xl border-slate-700 bg-transparent text-slate-300 hover:bg-slate-800 hover:text-white"
+                  className="rounded-xl border-slate-300 bg-transparent text-slate-700 hover:bg-slate-100 hover:text-slate-900"
                 >
                   Отмена
                 </Button>
                 <Button
                   onClick={handleSaveManual}
                   disabled={saving || !manualCameraId}
-                  className="rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold shadow-[0_0_15px_rgba(79,70,229,0.4)]"
+                  className="rounded-xl bg-indigo-600 hover:bg-indigo-500 text-slate-900 font-bold shadow-[0_0_15px_rgba(79,70,229,0.4)]"
                 >
                   {saving ? "Сохранение…" : "Сохранить"}
                 </Button>
@@ -553,7 +553,7 @@ export default function IncidentsPage({
       </div>
 
       {/* Фильтры и Поиск */}
-      <Card className="border border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] bg-slate-900/50 backdrop-blur-xl rounded-3xl overflow-hidden">
+      <Card className="border border-slate-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] bg-white/50 backdrop-blur-xl rounded-3xl overflow-hidden">
         <CardContent className="p-5">
           <div className="flex flex-col lg:flex-row gap-4">
             <div className="flex-1 relative">
@@ -562,20 +562,20 @@ export default function IncidentsPage({
                 placeholder="Поиск: описание, участники, камера…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 h-12 bg-slate-950/60 border-slate-800 text-white placeholder:text-slate-500 rounded-2xl shadow-inner focus-visible:ring-indigo-500/50"
+                className="pl-12 h-12 bg-slate-50/60 border-slate-200 text-slate-900 placeholder:text-slate-500 rounded-2xl shadow-inner focus-visible:ring-indigo-500/50"
               />
             </div>
 
             <div className="flex gap-3 flex-wrap items-center">
               {user?.role === "admin" && !schoolId && (
                 <Select value={selectedSchoolId} onValueChange={setSelectedSchoolId}>
-                  <SelectTrigger className="w-[200px] h-12 bg-slate-950/60 border-slate-800 text-slate-300 rounded-2xl font-medium">
+                  <SelectTrigger className="w-[200px] h-12 bg-slate-50/60 border-slate-200 text-slate-700 rounded-2xl font-medium">
                     <SelectValue placeholder="Школа" />
                   </SelectTrigger>
-                  <SelectContent className="bg-slate-900 border-slate-800 text-slate-300 rounded-xl">
-                    <SelectItem value="all" className="focus:bg-slate-800 cursor-pointer">Все школы</SelectItem>
+                  <SelectContent className="bg-white border-slate-200 text-slate-700 rounded-xl">
+                    <SelectItem value="all" className="focus:bg-slate-100 cursor-pointer">Все школы</SelectItem>
                     {schools.map((s) => (
-                      <SelectItem key={s.id} value={s.id} className="focus:bg-slate-800 cursor-pointer">
+                      <SelectItem key={s.id} value={s.id} className="focus:bg-slate-100 cursor-pointer">
                         {s.name}
                       </SelectItem>
                     ))}
@@ -584,22 +584,22 @@ export default function IncidentsPage({
               )}
 
               <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-[200px] h-12 bg-slate-950/60 border-slate-800 text-slate-300 rounded-2xl font-medium">
+                <SelectTrigger className="w-[200px] h-12 bg-slate-50/60 border-slate-200 text-slate-700 rounded-2xl font-medium">
                   <div className="flex items-center gap-2">
                     <Filter className="h-4 w-4 text-slate-500" />
                     <SelectValue placeholder="Тип события" />
                   </div>
                 </SelectTrigger>
-                <SelectContent className="bg-slate-900 border-slate-800 text-slate-300 rounded-xl">
-                  <SelectItem value="all" className="focus:bg-slate-800 cursor-pointer">Все типы</SelectItem>
-                  <SelectItem value="scream" className="focus:bg-slate-800 cursor-pointer">Крик</SelectItem>
-                  <SelectItem value="profanity" className="focus:bg-slate-800 cursor-pointer">Нецензурная лексика</SelectItem>
-                  <SelectItem value="abuse" className="focus:bg-slate-800 cursor-pointer">Оскорбления</SelectItem>
-                  <SelectItem value="fight_1v1" className="focus:bg-slate-800 cursor-pointer">Драка 1-на-1</SelectItem>
-                  <SelectItem value="fight_group" className="focus:bg-slate-800 cursor-pointer">Массовая драка</SelectItem>
-                  <SelectItem value="zone_violation" className="focus:bg-slate-800 cursor-pointer">Нарушение зоны</SelectItem>
-                  <SelectItem value="accident" className="focus:bg-slate-800 cursor-pointer">Несчастный случай</SelectItem>
-                  <SelectItem value="other" className="focus:bg-slate-800 cursor-pointer">Другое</SelectItem>
+                <SelectContent className="bg-white border-slate-200 text-slate-700 rounded-xl">
+                  <SelectItem value="all" className="focus:bg-slate-100 cursor-pointer">Все типы</SelectItem>
+                  <SelectItem value="scream" className="focus:bg-slate-100 cursor-pointer">Крик</SelectItem>
+                  <SelectItem value="profanity" className="focus:bg-slate-100 cursor-pointer">Нецензурная лексика</SelectItem>
+                  <SelectItem value="abuse" className="focus:bg-slate-100 cursor-pointer">Оскорбления</SelectItem>
+                  <SelectItem value="fight_1v1" className="focus:bg-slate-100 cursor-pointer">Драка 1-на-1</SelectItem>
+                  <SelectItem value="fight_group" className="focus:bg-slate-100 cursor-pointer">Массовая драка</SelectItem>
+                  <SelectItem value="zone_violation" className="focus:bg-slate-100 cursor-pointer">Нарушение зоны</SelectItem>
+                  <SelectItem value="accident" className="focus:bg-slate-100 cursor-pointer">Несчастный случай</SelectItem>
+                  <SelectItem value="other" className="focus:bg-slate-100 cursor-pointer">Другое</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -621,8 +621,8 @@ export default function IncidentsPage({
 
       {/* Заголовок результатов */}
       <div className="flex items-center justify-between px-2">
-        <div className="text-slate-400 font-medium text-sm">
-          Найдено инцидентов: <span className="text-white font-bold text-lg ml-1">{totalCount}</span>
+        <div className="text-slate-500 font-medium text-sm">
+          Найдено инцидентов: <span className="text-slate-900 font-bold text-lg ml-1">{totalCount}</span>
           {error && <span className="text-rose-400 ml-3 bg-rose-500/10 px-2 py-1 rounded-md">{error}</span>}
         </div>
         
@@ -630,12 +630,12 @@ export default function IncidentsPage({
         <div className="flex items-center gap-3">
           <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider hidden sm:inline-block">Показывать по:</span>
           <Select value={String(limit)} onValueChange={(v: any) => setLimit(Number(v))}>
-            <SelectTrigger className="w-[80px] h-9 bg-slate-900 border-slate-800 text-slate-300 rounded-lg text-xs font-bold">
+            <SelectTrigger className="w-[80px] h-9 bg-white border-slate-200 text-slate-700 rounded-lg text-xs font-bold">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-slate-900 border-slate-800 text-slate-300 min-w-[80px]">
+            <SelectContent className="bg-white border-slate-200 text-slate-700 min-w-[80px]">
               {[25, 50, 100].map((n) => (
-                <SelectItem key={n} value={String(n)} className="focus:bg-slate-800 text-xs font-bold cursor-pointer">{n}</SelectItem>
+                <SelectItem key={n} value={String(n)} className="focus:bg-slate-100 text-xs font-bold cursor-pointer">{n}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -645,7 +645,7 @@ export default function IncidentsPage({
               size="sm"
               onClick={() => setOffset(Math.max(0, offset - limit))}
               disabled={offset === 0 || loading}
-              className="h-9 px-3 rounded-lg border-slate-700 bg-transparent text-slate-300 hover:bg-slate-800"
+              className="h-9 px-3 rounded-lg border-slate-300 bg-transparent text-slate-700 hover:bg-slate-100"
             >
               Назад
             </Button>
@@ -654,7 +654,7 @@ export default function IncidentsPage({
               size="sm"
               onClick={() => setOffset(offset + limit)}
               disabled={loading || rows.length < limit}
-              className="h-9 px-3 rounded-lg border-slate-700 bg-transparent text-slate-300 hover:bg-slate-800"
+              className="h-9 px-3 rounded-lg border-slate-300 bg-transparent text-slate-700 hover:bg-slate-100"
             >
               Далее
             </Button>
@@ -663,22 +663,22 @@ export default function IncidentsPage({
       </div>
 
       {/* Таблица инцидентов (Desktop) */}
-      <Card className="hidden lg:block border border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] bg-slate-900/50 backdrop-blur-xl rounded-3xl overflow-hidden">
+      <Card className="hidden lg:block border border-slate-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] bg-white/50 backdrop-blur-xl rounded-3xl overflow-hidden">
         <CardContent className="p-0">
           <Table>
-            <TableHeader className="bg-slate-950/40 border-b border-slate-800/80">
+            <TableHeader className="bg-slate-50/40 border-b border-slate-200/80">
               <TableRow className="hover:bg-transparent border-transparent">
-                <TableHead className="text-slate-400 font-bold uppercase text-[10px] tracking-wider py-4 px-6">Дата и время</TableHead>
-                <TableHead className="text-slate-400 font-bold uppercase text-[10px] tracking-wider py-4">Камера</TableHead>
-                <TableHead className="text-slate-400 font-bold uppercase text-[10px] tracking-wider py-4">Источник</TableHead>
-                <TableHead className="text-slate-400 font-bold uppercase text-[10px] tracking-wider py-4">Описание</TableHead>
-                <TableHead className="text-slate-400 font-bold uppercase text-[10px] tracking-wider py-4">Статус</TableHead>
-                <TableHead className="text-slate-400 font-bold uppercase text-[10px] tracking-wider py-4 text-right pr-6">Действие</TableHead>
+                <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-wider py-4 px-6">Дата и время</TableHead>
+                <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-wider py-4">Камера</TableHead>
+                <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-wider py-4">Источник</TableHead>
+                <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-wider py-4">Описание</TableHead>
+                <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-wider py-4">Статус</TableHead>
+                <TableHead className="text-slate-500 font-bold uppercase text-[10px] tracking-wider py-4 text-right pr-6">Действие</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow className="border-b border-slate-800/40 hover:bg-transparent">
+                <TableRow className="border-b border-slate-200/40 hover:bg-transparent">
                   <TableCell colSpan={6} className="h-32">
                     <div className="flex flex-col items-center justify-center text-slate-500">
                       <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mb-2" />
@@ -687,7 +687,7 @@ export default function IncidentsPage({
                   </TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
-                <TableRow className="border-b border-slate-800/40 hover:bg-transparent">
+                <TableRow className="border-b border-slate-200/40 hover:bg-transparent">
                   <TableCell colSpan={6} className="h-32 text-center text-slate-500 font-medium">
                     Ничего не найдено
                   </TableCell>
@@ -703,23 +703,23 @@ export default function IncidentsPage({
                   return (
                     <TableRow
                       key={e.id}
-                      className="cursor-pointer group hover:bg-slate-800/40 border-b border-slate-800/40 transition-colors"
+                      className="cursor-pointer group hover:bg-slate-100/40 border-b border-slate-200/40 transition-colors"
                       onClick={() => onViewDetails(e.id)}
                     >
                       <TableCell className="px-6 py-4">
                         <div className="flex flex-col">
-                          <span className="text-slate-200 font-bold">{date}</span>
+                          <span className="text-slate-800 font-bold">{date}</span>
                           <span className="text-slate-500 text-xs font-semibold">{time}</span>
                         </div>
                       </TableCell>
                       <TableCell className="py-4">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-950/50 border border-slate-800 text-slate-300 text-xs font-medium">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-50/50 border border-slate-200 text-slate-700 text-xs font-medium">
                           {e.camera?.name ?? "—"}
                         </span>
                       </TableCell>
                       <TableCell className="py-4">{getSourceIcon(source)}</TableCell>
                       <TableCell className="py-4">
-                        <span className="text-slate-200 font-medium group-hover:text-indigo-300 transition-colors">{description}</span>
+                        <span className="text-slate-800 font-medium group-hover:text-indigo-300 transition-colors">{description}</span>
                       </TableCell>
                       <TableCell className="py-4">{getStatusBadge(status)}</TableCell>
                       <TableCell className="py-4 text-right pr-6">
@@ -747,14 +747,14 @@ export default function IncidentsPage({
       {/* Список инцидентов (Mobile) */}
       <div className="lg:hidden space-y-4">
         {loading && (
-          <Card className="border-slate-800 bg-slate-900/50">
+          <Card className="border-slate-200 bg-white/50">
             <CardContent className="p-8 flex justify-center text-indigo-400">
                <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
             </CardContent>
           </Card>
         )}
         {!loading && filtered.length === 0 && (
-          <Card className="border-slate-800 bg-slate-900/50">
+          <Card className="border-slate-200 bg-white/50">
             <CardContent className="p-8 text-center text-slate-500 font-medium">
               Ничего не найдено
             </CardContent>
@@ -771,34 +771,34 @@ export default function IncidentsPage({
             return (
               <Card
                 key={e.id}
-                className="cursor-pointer border-slate-800/80 bg-slate-900/50 backdrop-blur-xl hover:bg-slate-800/60 transition-colors shadow-lg rounded-2xl overflow-hidden group"
+                className="cursor-pointer border-slate-200/80 bg-white/50 backdrop-blur-xl hover:bg-slate-100/60 transition-colors shadow-lg rounded-2xl overflow-hidden group"
                 onClick={() => onViewDetails(e.id)}
               >
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between mb-4">
                     <div className="pr-4">
-                      <div className="text-white font-bold text-base mb-1.5 leading-snug group-hover:text-indigo-300 transition-colors">{description}</div>
+                      <div className="text-slate-900 font-bold text-base mb-1.5 leading-snug group-hover:text-indigo-300 transition-colors">{description}</div>
                       <div className="flex items-center gap-2 text-slate-500 text-xs font-medium">
                         <CalendarIcon className="w-3.5 h-3.5" />
                         {date} в {time}
                       </div>
                     </div>
-                    <div className="p-2 bg-slate-800 rounded-full group-hover:bg-indigo-500/20 transition-colors">
-                      <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-indigo-400" />
+                    <div className="p-2 bg-slate-100 rounded-full group-hover:bg-indigo-500/20 transition-colors">
+                      <ChevronRight className="h-4 w-4 text-slate-500 group-hover:text-indigo-400" />
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 mb-3">
                     {getSourceIcon(source)}
-                    <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-950/50 border border-slate-800 text-slate-400 text-xs font-medium shadow-inner">
+                    <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-50/50 border border-slate-200 text-slate-500 text-xs font-medium shadow-inner">
                       {e.camera?.name ?? "Камера: —"}
                     </span>
                   </div>
                   {participants && (
-                    <div className="text-slate-400 text-sm mb-4 bg-slate-950/30 p-2.5 rounded-xl border border-slate-800/50">
-                      Участники: <span className="text-slate-300 font-medium">{participants}</span>
+                    <div className="text-slate-500 text-sm mb-4 bg-slate-50/30 p-2.5 rounded-xl border border-slate-200/50">
+                      Участники: <span className="text-slate-700 font-medium">{participants}</span>
                     </div>
                   )}
-                  <div className="flex items-center justify-between border-t border-slate-800/60 pt-3">
+                  <div className="flex items-center justify-between border-t border-slate-200/60 pt-3">
                     {getStatusBadge(status)}
                     <span className="text-xs font-bold text-indigo-400">
                       Подробнее

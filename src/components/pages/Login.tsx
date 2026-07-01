@@ -4,6 +4,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../providers/AuthProvider";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
 import { Shield } from "lucide-react";
 
 export default function LoginPage() {
@@ -77,29 +79,38 @@ export default function LoginPage() {
           </div>
 
           {/* Форма */}
-          <form className="space-y-3" onSubmit={onSubmit}>
-            <input
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[15px] outline-none focus:border-slate-300"
-              placeholder="Логин"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              autoFocus
-            />
+          <form className="space-y-4" onSubmit={onSubmit}>
+            <div className="space-y-2">
+              <Label htmlFor="username">Логин</Label>
+              <Input
+                id="username"
+                placeholder="Введите логин"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                autoFocus
+              />
+            </div>
 
-            <input
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[15px] outline-none focus:border-slate-300"
-              type="password"
-              placeholder="Пароль"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div className="space-y-2">
+              <Label htmlFor="password">Пароль</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Введите пароль"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
 
-            <input
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[15px] outline-none focus:border-slate-300"
-              placeholder="Школа (ID или название) — необязательно"
-              value={schoolRaw}
-              onChange={(e) => setSchoolRaw(e.target.value)}
-            />
+            <div className="space-y-2">
+              <Label htmlFor="schoolRaw">Школа <span className="text-slate-400 font-normal">(необязательно)</span></Label>
+              <Input
+                id="schoolRaw"
+                placeholder="ID или название"
+                value={schoolRaw}
+                onChange={(e) => setSchoolRaw(e.target.value)}
+              />
+            </div>
 
             {error && (
               <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -107,7 +118,7 @@ export default function LoginPage() {
               </div>
             )}
 
-            <Button type="submit" disabled={loading} className="w-full h-9 rounded-lg">
+            <Button type="submit" disabled={loading} className="w-full h-10 mt-2">
               {loading ? "Входим…" : "Войти"}
             </Button>
           </form>

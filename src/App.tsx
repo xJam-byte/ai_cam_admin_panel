@@ -32,7 +32,7 @@ function NavigationMenu({ onNavigate }: { onNavigate?: () => void }) {
       <NavLink
         to={{ pathname: "/", search }}
         className={({ isActive }) =>
-          `btn ${linkBase} ${isActive ? "active" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"}`
+          `btn ${linkBase} ${isActive ? "active" : "text-slate-500 hover:text-slate-800 hover:bg-slate-100/50"}`
         }
         onClick={onNavigate}
       >
@@ -45,7 +45,7 @@ function NavigationMenu({ onNavigate }: { onNavigate?: () => void }) {
       <NavLink
         to={{ pathname: "/incidents", search }}
         className={({ isActive }) =>
-          `btn ${linkBase} ${isActive ? "active" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"}`
+          `btn ${linkBase} ${isActive ? "active" : "text-slate-500 hover:text-slate-800 hover:bg-slate-100/50"}`
         }
         onClick={onNavigate}
       >
@@ -83,26 +83,26 @@ function Layout() {
   }, [user?.schoolId]);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-50 selection:bg-indigo-500/30">
+    <div className="min-h-screen bg-slate-50 text-slate-900 selection:bg-indigo-500/30">
       {/* Header */}
-      <header className="bg-slate-900/60 backdrop-blur-xl border-b border-slate-800/60 sticky top-0 z-10 shadow-lg shadow-black/20">
+      <header className="bg-white/60 backdrop-blur-xl border-b border-slate-200/60 sticky top-0 z-10 shadow-lg shadow-black/20">
         <div className="px-4 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="lg:hidden text-slate-300 hover:text-white hover:bg-slate-800">
+                <Button variant="ghost" size="icon" className="lg:hidden text-slate-700 hover:text-slate-900 hover:bg-slate-100">
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-64 bg-slate-950 border-r border-slate-800">
+              <SheetContent side="left" className="w-64 bg-slate-50 border-r border-slate-200">
                 <div className="mt-8">
                   <NavigationMenu onNavigate={() => setSidebarOpen(false)} />
                 </div>
               </SheetContent>
             </Sheet>
-            <h1 className="text-slate-100 font-bold tracking-tight">Школа: {schoolName}</h1>
+            <h1 className="text-slate-900 font-bold tracking-tight">Школа: {schoolName}</h1>
             <span className="hidden sm:inline text-slate-700">•</span>
-            <span className="hidden sm:inline text-slate-400 font-medium">
+            <span className="hidden sm:inline text-slate-500 font-medium">
               Директор: {user?.username || "—"}
             </span>
           </div>
@@ -113,7 +113,7 @@ function Layout() {
               <div className="w-2 h-2 bg-emerald-500 rounded-full relative z-10" />
               <span className="text-emerald-400 font-semibold text-xs uppercase tracking-wider">Система активна</span>
             </div>
-            <Button variant="ghost" onClick={logout} title="Выйти" className="text-slate-400 hover:text-rose-400 hover:bg-rose-500/10">
+            <Button variant="ghost" onClick={logout} title="Выйти" className="text-slate-500 hover:text-rose-400 hover:bg-rose-500/10">
               <LogOut className="h-4 w-4 mr-2" />
               Выйти
             </Button>
@@ -123,7 +123,7 @@ function Layout() {
 
       <div className="flex">
         {/* Sidebar - Desktop */}
-        <aside className="hidden lg:block w-64 bg-slate-900/30 backdrop-blur-xl border-r border-slate-800/60 min-h-[calc(100vh-73px)] p-4">
+        <aside className="hidden lg:block w-64 bg-white/30 backdrop-blur-xl border-r border-slate-200/60 min-h-[calc(100vh-73px)] p-4">
           <NavigationMenu />
         </aside>
 

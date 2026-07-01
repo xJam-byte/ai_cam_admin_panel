@@ -445,28 +445,28 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 text-slate-100">
+    <div className="space-y-8 animate-in fade-in duration-500 text-slate-900">
       {/* Шапка и фильтры даты */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-slate-900/50 backdrop-blur-xl p-6 rounded-3xl border border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-white/50 backdrop-blur-xl p-6 rounded-3xl border border-slate-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
         <div>
-          <h2 className="text-3xl font-extrabold tracking-tight text-white drop-shadow-sm">
+          <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 drop-shadow-sm">
             Главная панель
           </h2>
-          <p className="text-slate-400 mt-1 text-sm font-medium">
+          <p className="text-slate-500 mt-1 text-sm font-medium">
             Обзор активности и мониторинг безопасности в реальном времени
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
           {/* Быстрые фильтры */}
-          <div className="bg-slate-950/80 p-0.5 rounded-xl flex items-center gap-0.5 border border-slate-800/80 shadow-inner">
+          <div className="bg-slate-50/80 p-0.5 rounded-xl flex items-center gap-0.5 border border-slate-200/80 shadow-inner">
             <Button
               variant={period === "day" ? "default" : "ghost"}
               size="sm"
               onClick={() => setQuickRange("day")}
               className={cn(
                 "rounded-lg transition-all font-semibold text-xs h-8 px-3.5",
-                period === "day" ? "bg-indigo-600 text-white shadow-[0_0_15px_-3px_rgba(79,70,229,0.5)]" : "text-slate-400 hover:text-white"
+                period === "day" ? "bg-indigo-600 text-slate-900 shadow-[0_0_15px_-3px_rgba(79,70,229,0.5)]" : "text-slate-500 hover:text-slate-900"
               )}
             >
               Сегодня
@@ -477,7 +477,7 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
               onClick={() => setQuickRange("week")}
               className={cn(
                 "rounded-lg transition-all font-semibold text-xs h-8 px-3.5",
-                period === "week" ? "bg-indigo-600 text-white shadow-[0_0_15px_-3px_rgba(79,70,229,0.5)]" : "text-slate-400 hover:text-white"
+                period === "week" ? "bg-indigo-600 text-slate-900 shadow-[0_0_15px_-3px_rgba(79,70,229,0.5)]" : "text-slate-500 hover:text-slate-900"
               )}
             >
               Неделя
@@ -488,7 +488,7 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
               onClick={() => setQuickRange("month")}
               className={cn(
                 "rounded-lg transition-all font-semibold text-xs h-8 px-3.5",
-                period === "month" ? "bg-indigo-600 text-white shadow-[0_0_15px_-3px_rgba(79,70,229,0.5)]" : "text-slate-400 hover:text-white"
+                period === "month" ? "bg-indigo-600 text-slate-900 shadow-[0_0_15px_-3px_rgba(79,70,229,0.5)]" : "text-slate-500 hover:text-slate-900"
               )}
             >
               Месяц
@@ -504,8 +504,8 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
                 className={cn(
                   "h-9 px-4 gap-2 font-semibold text-xs rounded-xl shadow-lg transition-all",
                   period === "custom" 
-                    ? "bg-indigo-600 text-white shadow-indigo-500/25 border-transparent" 
-                    : "bg-slate-900/50 text-slate-300 border-slate-800 hover:bg-slate-800 hover:text-white hover:border-slate-700"
+                    ? "bg-indigo-600 text-slate-900 shadow-indigo-500/25 border-transparent" 
+                    : "bg-white/50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:text-slate-900 hover:border-slate-300"
                 )}
               >
                 <CalendarIcon className={cn("h-4 w-4", period === "custom" ? "text-indigo-200" : "text-indigo-400")} />
@@ -513,7 +513,7 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
               </Button>
             </PopoverTrigger>
             <PopoverContent
-              className="w-auto p-0 border-slate-800 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-3xl bg-slate-900"
+              className="w-auto p-0 border-slate-200 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-3xl bg-white"
               align="end"
             >
               <Calendar
@@ -522,7 +522,7 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
                 defaultMonth={dateRange.from}
                 selected={{ from: dateRange.from, to: dateRange.to }}
                 onSelect={handleSelectRange}
-                className="rounded-3xl bg-slate-900 text-slate-100"
+                className="rounded-3xl bg-white text-slate-900"
               />
             </PopoverContent>
           </Popover>
@@ -532,11 +532,11 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
       {/* Grid с карточками с общими цифрами */}
       <div className="grid gap-6 md:grid-cols-3">
         {/* Уникальные посетители */}
-        <Card className="relative overflow-hidden border border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_8px_30px_rgba(99,102,241,0.15)] transition-all duration-300 hover:-translate-y-1 bg-slate-900/50 backdrop-blur-xl rounded-3xl group">
+        <Card className="relative overflow-hidden border border-slate-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_8px_30px_rgba(99,102,241,0.15)] transition-all duration-300 hover:-translate-y-1 bg-white/50 backdrop-blur-xl rounded-3xl group">
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-cyan-400" />
           <div className="absolute -top-12 -right-12 w-28 h-28 bg-indigo-500/10 rounded-full group-hover:scale-125 group-hover:bg-indigo-500/20 transition-all duration-700 blur-2xl" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-            <CardTitle className="text-xs font-bold tracking-wider text-slate-400 uppercase">
+            <CardTitle className="text-xs font-bold tracking-wider text-slate-500 uppercase">
               Уникальные посетители
             </CardTitle>
             <div className="p-2 bg-indigo-500/10 rounded-xl border border-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
@@ -549,24 +549,24 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
           </CardHeader>
           <CardContent className="relative z-10">
             {loading ? (
-              <div className="h-9 w-16 bg-slate-800 animate-pulse rounded-lg mt-1" />
+              <div className="h-9 w-16 bg-slate-100 animate-pulse rounded-lg mt-1" />
             ) : (
-              <div className="text-4xl font-extrabold tracking-tight text-white mt-1 drop-shadow-md">
+              <div className="text-4xl font-extrabold tracking-tight text-slate-900 mt-1 drop-shadow-md">
                 {uniqueVisitorsCount}
               </div>
             )}
-            <p className="text-[11px] text-slate-400 font-medium mt-3">
+            <p className="text-[11px] text-slate-500 font-medium mt-3">
               Идентифицировано в реальном времени
             </p>
           </CardContent>
         </Card>
 
         {/* Общее количество детекций */}
-        <Card className="relative overflow-hidden border border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_8px_30px_rgba(244,63,94,0.15)] transition-all duration-300 hover:-translate-y-1 bg-slate-900/50 backdrop-blur-xl rounded-3xl group">
+        <Card className="relative overflow-hidden border border-slate-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_8px_30px_rgba(244,63,94,0.15)] transition-all duration-300 hover:-translate-y-1 bg-white/50 backdrop-blur-xl rounded-3xl group">
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-rose-500 to-orange-400" />
           <div className="absolute -top-12 -right-12 w-28 h-28 bg-rose-500/10 rounded-full group-hover:scale-125 group-hover:bg-rose-500/20 transition-all duration-700 blur-2xl" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-            <CardTitle className="text-xs font-bold tracking-wider text-slate-400 uppercase">
+            <CardTitle className="text-xs font-bold tracking-wider text-slate-500 uppercase">
               Всего детекций
             </CardTitle>
             <div className="p-2 bg-rose-500/10 rounded-xl border border-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.2)]">
@@ -579,10 +579,10 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
           </CardHeader>
           <CardContent className="relative z-10">
             {loading ? (
-              <div className="h-9 w-16 bg-slate-800 animate-pulse rounded-lg mt-1" />
+              <div className="h-9 w-16 bg-slate-100 animate-pulse rounded-lg mt-1" />
             ) : (
               <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-extrabold tracking-tight text-white mt-1 drop-shadow-md">
+                <span className="text-4xl font-extrabold tracking-tight text-slate-900 mt-1 drop-shadow-md">
                   {totalDetections}
                 </span>
                 {detectionsTrend && (
@@ -604,18 +604,18 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
                 )}
               </div>
             )}
-            <p className="text-[11px] text-slate-400 font-medium mt-3">
+            <p className="text-[11px] text-slate-500 font-medium mt-3">
               Инциденты за выбранный период
             </p>
           </CardContent>
         </Card>
 
         {/* Пиковый час активности */}
-        <Card className="relative overflow-hidden border border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_8px_30px_rgba(234,179,8,0.15)] transition-all duration-300 hover:-translate-y-1 bg-slate-900/50 backdrop-blur-xl rounded-3xl group">
+        <Card className="relative overflow-hidden border border-slate-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_8px_30px_rgba(234,179,8,0.15)] transition-all duration-300 hover:-translate-y-1 bg-white/50 backdrop-blur-xl rounded-3xl group">
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-yellow-500" />
           <div className="absolute -top-12 -right-12 w-28 h-28 bg-amber-500/10 rounded-full group-hover:scale-125 group-hover:bg-amber-500/20 transition-all duration-700 blur-2xl" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-            <CardTitle className="text-xs font-bold tracking-wider text-slate-400 uppercase">
+            <CardTitle className="text-xs font-bold tracking-wider text-slate-500 uppercase">
               Пиковый час
             </CardTitle>
             <div className="p-2 bg-amber-500/10 rounded-xl border border-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
@@ -628,13 +628,13 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
           </CardHeader>
           <CardContent className="relative z-10">
             {loading ? (
-              <div className="h-9 w-24 bg-slate-800 animate-pulse rounded-lg mt-1" />
+              <div className="h-9 w-24 bg-slate-100 animate-pulse rounded-lg mt-1" />
             ) : (
-              <div className="text-4xl font-extrabold tracking-tight text-white mt-1 drop-shadow-md">
+              <div className="text-4xl font-extrabold tracking-tight text-slate-900 mt-1 drop-shadow-md">
                 {peakHour}
               </div>
             )}
-            <p className="text-[11px] text-slate-400 font-medium mt-3">
+            <p className="text-[11px] text-slate-500 font-medium mt-3">
               Максимальная плотность событий
             </p>
           </CardContent>
@@ -643,28 +643,28 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
 
       {/* Раздел с табами графиков */}
       <Tabs defaultValue="progression" className="w-full">
-        <Card className="border border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-3xl bg-slate-900/50 backdrop-blur-xl overflow-hidden">
-          <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-2 gap-4 border-b border-slate-800/40">
+        <Card className="border border-slate-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-3xl bg-white/50 backdrop-blur-xl overflow-hidden">
+          <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-2 gap-4 border-b border-slate-200/40">
             <div>
-              <CardTitle className="text-lg font-bold flex items-center gap-2 text-white">
+              <CardTitle className="text-lg font-bold flex items-center gap-2 text-slate-900">
                 <TrendingUp className="h-5 w-5 text-indigo-400 drop-shadow-[0_0_10px_rgba(99,102,241,0.8)]" />
                 Анализ динамики безопасности
               </CardTitle>
-              <CardDescription className="text-xs font-medium text-slate-400">
+              <CardDescription className="text-xs font-medium text-slate-500">
                 Интеграция активности и фиксации угроз во времени
               </CardDescription>
             </div>
 
-            <TabsList className="bg-slate-950/50 p-1 rounded-xl border border-slate-800/80 shadow-inner">
+            <TabsList className="bg-slate-50/50 p-1 rounded-xl border border-slate-200/80 shadow-inner">
               <TabsTrigger
                 value="progression"
-                className="rounded-lg text-xs py-1.5 px-4 font-semibold data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-[0_0_15px_-3px_rgba(79,70,229,0.5)] text-slate-400"
+                className="rounded-lg text-xs py-1.5 px-4 font-semibold data-[state=active]:bg-indigo-600 data-[state=active]:text-slate-900 data-[state=active]:shadow-[0_0_15px_-3px_rgba(79,70,229,0.5)] text-slate-500"
               >
                 Динамика событий
               </TabsTrigger>
               <TabsTrigger
                 value="hourly"
-                className="rounded-lg text-xs py-1.5 px-4 font-semibold data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-[0_0_15px_-3px_rgba(79,70,229,0.5)] text-slate-400"
+                className="rounded-lg text-xs py-1.5 px-4 font-semibold data-[state=active]:bg-indigo-600 data-[state=active]:text-slate-900 data-[state=active]:shadow-[0_0_15px_-3px_rgba(79,70,229,0.5)] text-slate-500"
               >
                 Активность по часам
               </TabsTrigger>
@@ -717,13 +717,13 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
                             if (active && payload && payload.length) {
                               const d = payload[0].payload;
                               return (
-                                <div className="bg-slate-900/90 backdrop-blur-xl text-white rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.5)] p-3 border border-slate-700/80 text-xs">
-                                  <p className="font-semibold mb-1 text-slate-200">
+                                <div className="bg-white/90 backdrop-blur-xl text-slate-900 rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.5)] p-3 border border-slate-300/80 text-xs">
+                                  <p className="font-semibold mb-1 text-slate-800">
                                     {d.fullDate || d.date}
                                   </p>
                                   <p className="text-indigo-400">
                                     Детекций:{" "}
-                                    <span className="font-bold text-white text-sm">
+                                    <span className="font-bold text-slate-900 text-sm">
                                       {payload[0].value}
                                     </span>
                                   </p>
@@ -747,7 +747,7 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
                     </ResponsiveContainer>
                   </div>
                 ) : (
-                  <div className="h-[300px] flex flex-col items-center justify-center text-slate-500 border border-dashed border-slate-800 rounded-xl bg-slate-900/20">
+                  <div className="h-[300px] flex flex-col items-center justify-center text-slate-500 border border-dashed border-slate-200 rounded-xl bg-white/20">
                     <CalendarIcon className="w-10 h-10 opacity-30 mb-3" />
                     <p className="text-sm">Нет данных за выбранный период</p>
                   </div>
@@ -799,13 +799,13 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
                           content={({ active, payload }) => {
                             if (active && payload && payload.length) {
                               return (
-                                <div className="bg-slate-900/90 backdrop-blur-xl text-white rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.5)] p-3 border border-slate-700/80 text-xs">
-                                  <p className="font-semibold mb-1 text-slate-200">
+                                <div className="bg-white/90 backdrop-blur-xl text-slate-900 rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.5)] p-3 border border-slate-300/80 text-xs">
+                                  <p className="font-semibold mb-1 text-slate-800">
                                     Время суток: {payload[0].payload.hour}
                                   </p>
                                   <p className="text-cyan-400">
                                     Детекций:{" "}
-                                    <span className="font-bold text-white text-sm">
+                                    <span className="font-bold text-slate-900 text-sm">
                                       {payload[0].value}
                                     </span>
                                   </p>
@@ -828,7 +828,7 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
                     </ResponsiveContainer>
                   </div>
                 ) : (
-                  <div className="h-[300px] flex flex-col items-center justify-center text-slate-500 border border-dashed border-slate-800 rounded-xl bg-slate-900/20">
+                  <div className="h-[300px] flex flex-col items-center justify-center text-slate-500 border border-dashed border-slate-200 rounded-xl bg-white/20">
                     <CalendarIcon className="w-10 h-10 opacity-30 mb-3" />
                     <p className="text-sm">Нет данных за выбранный период</p>
                   </div>
@@ -842,18 +842,18 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
       {/* Grid с фидом идентификации и аналитикой слов/тональности */}
       <div className="grid gap-6 lg:grid-cols-5">
         {/* Re-Identification Feed */}
-        <Card className="lg:col-span-3 border border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-3xl bg-slate-900/50 backdrop-blur-xl flex flex-col overflow-hidden">
-          <CardHeader className="pb-3 border-b border-slate-800/40 bg-slate-900/30">
+        <Card className="lg:col-span-3 border border-slate-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-3xl bg-white/50 backdrop-blur-xl flex flex-col overflow-hidden">
+          <CardHeader className="pb-3 border-b border-slate-200/40 bg-white/30">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-lg font-bold text-white">
+                <CardTitle className="text-lg font-bold text-slate-900">
                   Идентификация и перемещение
                 </CardTitle>
-                <CardDescription className="text-xs font-medium text-slate-400">
+                <CardDescription className="text-xs font-medium text-slate-500">
                   Журнал перемещений и распознавания личностей
                 </CardDescription>
               </div>
-              <Badge variant="outline" className="px-3 py-1 text-[11px] font-bold bg-slate-800/50 text-slate-300 border-slate-700 rounded-lg shadow-inner">
+              <Badge variant="outline" className="px-3 py-1 text-[11px] font-bold bg-slate-100/50 text-slate-700 border-slate-300 rounded-lg shadow-inner">
                 {visitors.length} человек(а)
               </Badge>
             </div>
@@ -864,7 +864,7 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
                 {[1, 2, 3].map((n) => (
                   <div
                     key={n}
-                    className="h-14 bg-slate-800/50 animate-pulse rounded-2xl border border-slate-700/50"
+                    className="h-14 bg-slate-100/50 animate-pulse rounded-2xl border border-slate-300/50"
                   />
                 ))}
               </div>
@@ -894,14 +894,14 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
                   return (
                     <div
                       key={v.id}
-                      className="flex items-center justify-between py-3 px-4 hover:bg-slate-800/60 rounded-2xl transition-all border border-transparent hover:border-slate-700/50 group"
+                      className="flex items-center justify-between py-3 px-4 hover:bg-slate-100/60 rounded-2xl transition-all border border-transparent hover:border-slate-300/50 group"
                     >
                       <div className="flex items-center gap-4">
                         <div className="relative">
-                          <Avatar className="h-11 w-11 border border-slate-700 shadow-lg group-hover:scale-105 transition-transform">
+                          <Avatar className="h-11 w-11 border border-slate-300 shadow-lg group-hover:scale-105 transition-transform">
                             <AvatarFallback
                               className={cn(
-                                "text-white font-extrabold text-sm bg-gradient-to-tr",
+                                "text-slate-900 font-extrabold text-sm bg-gradient-to-tr",
                                 v.avatarGradient
                               )}
                             >
@@ -916,10 +916,10 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
                           )}
                         </div>
                         <div>
-                          <div className="text-sm font-bold text-slate-200 group-hover:text-indigo-400 transition-colors drop-shadow-sm">
+                          <div className="text-sm font-bold text-slate-800 group-hover:text-indigo-400 transition-colors drop-shadow-sm">
                             {v.alias}
                           </div>
-                          <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5 mt-1">
+                          <div className="text-[11px] text-slate-500 font-medium flex items-center gap-1.5 mt-1">
                             <Clock className="h-3 w-3 text-slate-500" />
                             {timeString}
                           </div>
@@ -943,7 +943,7 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
                         {/* Количество детекций */}
                         <Badge
                           variant="secondary"
-                          className="bg-slate-800 text-slate-300 font-semibold px-2.5 py-0.5 text-[10px] rounded-md border border-slate-700"
+                          className="bg-slate-100 text-slate-700 font-semibold px-2.5 py-0.5 text-[10px] rounded-md border border-slate-300"
                         >
                           {v.count} раз
                         </Badge>
@@ -953,7 +953,7 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
                 })}
               </div>
             ) : (
-              <div className="h-[200px] flex flex-col items-center justify-center text-slate-500 border border-dashed border-slate-800 rounded-2xl bg-slate-900/20 m-2">
+              <div className="h-[200px] flex flex-col items-center justify-center text-slate-500 border border-dashed border-slate-200 rounded-2xl bg-white/20 m-2">
                 <Users className="w-8 h-8 opacity-30 mb-2" />
                 <p className="text-xs font-medium">Нет зафиксированных посетителей</p>
               </div>
@@ -964,24 +964,24 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
         {/* Word Cloud & Sentiment Donut */}
         <div className="lg:col-span-2 space-y-6 flex flex-col justify-between">
           {/* Word Cloud */}
-          <Card className="border border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-3xl bg-slate-900/50 backdrop-blur-xl flex-1 flex flex-col overflow-hidden">
-            <CardHeader className="pb-2 bg-slate-900/30 border-b border-slate-800/40">
+          <Card className="border border-slate-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-3xl bg-white/50 backdrop-blur-xl flex-1 flex flex-col overflow-hidden">
+            <CardHeader className="pb-2 bg-white/30 border-b border-slate-200/40">
               <div className="flex items-center gap-2">
                 <MessageSquare className="h-5 w-5 text-indigo-400 drop-shadow-[0_0_8px_rgba(129,140,248,0.5)]" />
-                <CardTitle className="text-md font-bold text-white">
+                <CardTitle className="text-md font-bold text-slate-900">
                   Облако обсуждаемых слов
                 </CardTitle>
               </div>
-              <CardDescription className="text-[11px] font-medium text-slate-400">
+              <CardDescription className="text-[11px] font-medium text-slate-500">
                 Популярные ключевые слова из диалогов
               </CardDescription>
             </CardHeader>
             <CardContent className="flex-1 flex items-center justify-center p-4 relative">
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-900/10 via-transparent to-transparent pointer-events-none" />
               {loading ? (
-                <div className="h-[120px] w-full bg-slate-800/50 animate-pulse rounded-2xl" />
+                <div className="h-[120px] w-full bg-slate-100/50 animate-pulse rounded-2xl" />
               ) : wordCloudData.length > 0 ? (
-                <div className="flex flex-wrap items-center justify-center gap-2 p-4 bg-slate-950/40 border border-slate-800/60 rounded-2xl min-h-[140px] w-full shadow-inner relative z-10">
+                <div className="flex flex-wrap items-center justify-center gap-2 p-4 bg-slate-50/40 border border-slate-200/60 rounded-2xl min-h-[140px] w-full shadow-inner relative z-10">
                   {wordCloudData.map((w, idx) => {
                     const maxVal = wordCloudData[0].value;
                     const minVal = wordCloudData[wordCloudData.length - 1].value;
@@ -1015,7 +1015,7 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
                   })}
                 </div>
               ) : (
-                <div className="text-slate-500 text-xs text-center p-6 border border-dashed border-slate-800 rounded-2xl bg-slate-900/20 w-full z-10">
+                <div className="text-slate-500 text-xs text-center p-6 border border-dashed border-slate-200 rounded-2xl bg-white/20 w-full z-10">
                   Нет ключевых слов для отображения
                 </div>
               )}
@@ -1023,21 +1023,21 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
           </Card>
 
           {/* Sentiment: Тональность диалогов (Donut Chart) */}
-          <Card className="border border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-3xl bg-slate-900/50 backdrop-blur-xl flex-1 flex flex-col overflow-hidden mt-6 lg:mt-0">
-            <CardHeader className="pb-1 bg-slate-900/30 border-b border-slate-800/40">
+          <Card className="border border-slate-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-3xl bg-white/50 backdrop-blur-xl flex-1 flex flex-col overflow-hidden mt-6 lg:mt-0">
+            <CardHeader className="pb-1 bg-white/30 border-b border-slate-200/40">
               <div className="flex items-center gap-2">
                 <Smile className="h-5 w-5 text-indigo-400 drop-shadow-[0_0_8px_rgba(129,140,248,0.5)]" />
-                <CardTitle className="text-md font-bold text-white">
+                <CardTitle className="text-md font-bold text-slate-900">
                   Тональность инцидентов
                 </CardTitle>
               </div>
-              <CardDescription className="text-[11px] font-medium text-slate-400">
+              <CardDescription className="text-[11px] font-medium text-slate-500">
                 Анализ эмоционального фона речевых событий
               </CardDescription>
             </CardHeader>
             <CardContent className="flex-1 flex items-center justify-center p-4">
               {loading ? (
-                <div className="h-[120px] w-full bg-slate-800/50 animate-pulse rounded-2xl" />
+                <div className="h-[120px] w-full bg-slate-100/50 animate-pulse rounded-2xl" />
               ) : sentimentData.length > 0 ? (
                 <div className="w-full flex flex-col items-center">
                   <div className="relative flex items-center justify-center h-[140px] w-full">
@@ -1069,10 +1069,10 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
                             if (active && payload && payload.length) {
                               const d = payload[0].payload;
                               return (
-                                <div className="bg-slate-900/90 backdrop-blur-xl text-white rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.5)] p-2 px-3 border border-slate-700/80 text-xs flex items-center gap-2">
+                                <div className="bg-white/90 backdrop-blur-xl text-slate-900 rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.5)] p-2 px-3 border border-slate-300/80 text-xs flex items-center gap-2">
                                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: d.color, boxShadow: `0 0 10px ${d.color}` }} />
-                                  <span className="font-semibold text-slate-200">
-                                    {d.name}: <span className="text-white">{d.value}</span>
+                                  <span className="font-semibold text-slate-800">
+                                    {d.name}: <span className="text-slate-900">{d.value}</span>
                                   </span>
                                 </div>
                               );
@@ -1084,7 +1084,7 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
                     </ResponsiveContainer>
                     {dominantSentiment && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                        <span className="text-2xl font-extrabold text-white drop-shadow-md tracking-tight">
+                        <span className="text-2xl font-extrabold text-slate-900 drop-shadow-md tracking-tight">
                           {dominantSentiment.percent}%
                         </span>
                         <span
@@ -1097,7 +1097,7 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
                     )}
                   </div>
                   {/* Легенда */}
-                  <div className="flex justify-center flex-wrap gap-4 text-[11px] font-semibold text-slate-300 mt-4 bg-slate-950/40 px-4 py-2 rounded-xl border border-slate-800/60 shadow-inner">
+                  <div className="flex justify-center flex-wrap gap-4 text-[11px] font-semibold text-slate-700 mt-4 bg-slate-50/40 px-4 py-2 rounded-xl border border-slate-200/60 shadow-inner">
                     {sentimentData.map((d) => (
                       <div key={d.name} className="flex items-center gap-1.5">
                         <span
@@ -1112,7 +1112,7 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
                   </div>
                 </div>
               ) : (
-                <div className="text-slate-500 text-xs text-center p-6 border border-dashed border-slate-800 rounded-2xl bg-slate-900/20 w-full">
+                <div className="text-slate-500 text-xs text-center p-6 border border-dashed border-slate-200 rounded-2xl bg-white/20 w-full">
                   Нет тональностей для анализа
                 </div>
               )}
@@ -1122,7 +1122,7 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
       </div>
 
       <div className="flex justify-end pt-4 pb-8">
-        <Button onClick={onNavigateToIncidents} className="group bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow-[0_0_20px_rgba(79,70,229,0.4)] border border-indigo-400/30 transition-all hover:scale-105" size="lg">
+        <Button onClick={onNavigateToIncidents} className="group bg-indigo-600 hover:bg-indigo-500 text-slate-900 rounded-xl shadow-[0_0_20px_rgba(79,70,229,0.4)] border border-indigo-400/30 transition-all hover:scale-105" size="lg">
           <span className="font-bold tracking-wide">Перейти к журналу</span>
           <ChevronRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
         </Button>
