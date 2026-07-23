@@ -54,7 +54,7 @@ import { useAuth } from "../../providers/AuthProvider";
 import { getSchools, type School } from "../../lib/api";
 import { cn } from "../ui/utils";
 
-type TimePeriod = "day" | "week" | "month" | "custom";
+type TimePeriod = "day" | "week" | "month" | "custom" | "all";
 
 interface IncidentsPageProps {
   onViewDetails: (id: string) => void;
@@ -145,6 +145,8 @@ export default function IncidentsPage({
       } else if (period === "week") {
         fromDate.setDate(fromDate.getDate() - 7);
         fromDate.setHours(0, 0, 0, 0);
+      } else if (period === "all") {
+        fromDate = new Date(0);
       } else {
         fromDate.setDate(fromDate.getDate() - 30);
         fromDate.setHours(0, 0, 0, 0);
@@ -415,6 +417,17 @@ export default function IncidentsPage({
             >
               Месяц
             </Button>
+            <Button
+              variant={period === "all" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setPeriod("all")}
+              className={cn(
+                "rounded-lg transition-all font-semibold text-xs h-8 px-3.5",
+                period === "all" ? "bg-indigo-600 text-slate-900 shadow-[0_0_15px_-3px_rgba(79,70,229,0.5)]" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100/50"
+              )}
+            >
+              Все время
+            </Button>
           </div>
 
           <Popover>
@@ -431,6 +444,7 @@ export default function IncidentsPage({
               >
                 <CalendarIcon className={cn("h-4 w-4", period === "custom" ? "text-indigo-200" : "text-indigo-400")} />
                 {(() => {
+                  if (period === "all") return "За всё время";
                   const options: Intl.DateTimeFormatOptions = {
                     day: "numeric",
                     month: "short",

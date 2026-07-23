@@ -140,7 +140,8 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
     | "day"
     | "week"
     | "month"
-    | "custom";
+    | "custom"
+    | "all";
 
   // Подсчёт дат
   const dateRange = useMemo(() => {
@@ -157,6 +158,8 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
       } else if (period === "week") {
         fromDate.setDate(fromDate.getDate() - 7);
         fromDate.setHours(0, 0, 0, 0);
+      } else if (period === "all") {
+        fromDate = new Date(0);
       } else {
         // month
         fromDate.setDate(fromDate.getDate() - 30);
@@ -421,7 +424,7 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
     setSearchParams(newParams);
   };
 
-  const setQuickRange = (rangeType: "day" | "week" | "month") => {
+  const setQuickRange = (rangeType: "day" | "week" | "month" | "all") => {
     const newParams = new URLSearchParams(searchParams);
     newParams.delete("from");
     newParams.delete("to");
@@ -430,6 +433,7 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
   };
 
   const formatDateDisplay = (from: Date, to: Date) => {
+    if (period === "all") return "За всё время";
     const options: Intl.DateTimeFormatOptions = {
       day: "numeric",
       month: "short",
@@ -492,6 +496,17 @@ export default function Dashboard({ onNavigateToIncidents }: DashboardProps) {
               )}
             >
               Месяц
+            </Button>
+            <Button
+              variant={period === "all" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setQuickRange("all")}
+              className={cn(
+                "rounded-lg transition-all font-semibold text-xs h-8 px-3.5",
+                period === "all" ? "bg-indigo-600 text-slate-900 shadow-[0_0_15px_-3px_rgba(79,70,229,0.5)]" : "text-slate-500 hover:text-slate-900"
+              )}
+            >
+              Все время
             </Button>
           </div>
 
